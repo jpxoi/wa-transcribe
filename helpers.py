@@ -16,8 +16,12 @@
 
 import os
 import sys
+import shutil
+import platform
 import subprocess
+import importlib.util
 import torch
+from typing import Optional, Literal
 from colorama import Fore, Style
 import config
 
@@ -83,3 +87,70 @@ def get_device_name() -> str:
     if torch.backends.mps.is_available():
         return "Apple Silicon (MPS)"
     return "CPU Only"
+
+
+def check_command(command) -> tuple[bool, Optional[str]]:
+    """
+    Checks if a system command is available.
+
+    Args:
+        command (str): The command to check.
+
+    Returns:
+        tuple[bool, Optional[str]]: A tuple containing a boolean indicating
+        whether the command is available and the path to the command if found.
+    """
+    path = shutil.which(command)
+    if path:
+        return True, path
+    return False, None
+
+
+def check_import(module_name) -> bool:
+    """
+    Checks if a Python library is installed.
+
+    Args:
+        module_name (str): The name of the module to check.
+
+    Returns:
+        bool: True if the module is installed, False otherwise.
+    """
+    return importlib.util.find_spec(module_name) is not None
+
+
+def get_memory_info() -> tuple[
+    Optional[float], Literal["vram", "unified", "system"] | None
+]:
+    """
+    Gets the total memory information.
+
+    Returns:
+        tuple: (total_gb, memory_type)
+    """
+    try:
+        # 1. Check NVIDIA VRAM
+        if torch.cuda.is_available():
+            # torch.cuda.get_device_properties(0).total_memory returns bytes
+            total_vram = torch.cuda.get_device_properties(0).total_memory / (1024**3)
+            return total_vram, "vram"
+
+        # 2. Check macOS Unified Memory
+        elif platform.system() == "Darwin":
+            cmd = "sysctl -n hw.memsize"
+            total_bytes = int(subprocess.check_output(cmd.split()).strip())
+            return total_bytes / (1024**3), "unified"
+
+        # 3. Check Linux System RAM
+        elif platform.system() == "Linux":
+            with open("/proc/meminfo", "r") as f:
+                for line in f:
+                    if "MemTotal" in line:
+                        kb_value = int(line.split()[1])
+                        return kb_value / (1024**2), "system"
+
+        # 4. Windows Fallback
+        return None, None
+
+    except Exception:
+        return None, None

@@ -15,13 +15,9 @@
 
 
 import sys
-import shutil
-import importlib.util
 import platform
 import os
-import subprocess
-import torch
-from typing import Optional, Literal, Dict
+from typing import Optional, Dict
 from colorama import init, Fore, Style
 import config
 import helpers
@@ -29,7 +25,6 @@ import helpers
 # Initialize colors
 init(autoreset=True)
 
-# Centralized Definition of Model Requirements (GB)
 MODEL_REQUIREMENTS: Dict[str, float] = {
     "large": 10.0,
     "turbo": 6.0,
@@ -38,43 +33,6 @@ MODEL_REQUIREMENTS: Dict[str, float] = {
     "base": 1.0,
     "tiny": 1.0,
 }
-
-
-def get_memory_info() -> tuple[
-    Optional[float], Literal["vram", "unified", "system"] | None
-]:
-    """
-    Gets the total memory information.
-
-    Returns:
-        tuple: (total_gb, memory_type)
-    """
-    try:
-        # 1. Check NVIDIA VRAM
-        if torch.cuda.is_available():
-            # torch.cuda.get_device_properties(0).total_memory returns bytes
-            total_vram = torch.cuda.get_device_properties(0).total_memory / (1024**3)
-            return total_vram, "vram"
-
-        # 2. Check macOS Unified Memory
-        elif platform.system() == "Darwin":
-            cmd = "sysctl -n hw.memsize"
-            total_bytes = int(subprocess.check_output(cmd.split()).strip())
-            return total_bytes / (1024**3), "unified"
-
-        # 3. Check Linux System RAM
-        elif platform.system() == "Linux":
-            with open("/proc/meminfo", "r") as f:
-                for line in f:
-                    if "MemTotal" in line:
-                        kb_value = int(line.split()[1])
-                        return kb_value / (1024**2), "system"
-
-        # 4. Windows Fallback
-        return None, None
-
-    except Exception:
-        return None, None
 
 
 def draw_bar(percent, width=20) -> str:
@@ -128,8 +86,8 @@ def suggest_model(
 
     # --- 2. SELECTION LOGIC ---
     sorted_models = sorted(MODEL_REQUIREMENTS.items(), key=lambda x: x[1], reverse=True)
-
     rec_model = "tiny"
+
     for name, size in sorted_models:
         if usable_gb > 0 and (size / usable_gb) <= 0.7:
             rec_model = name
@@ -169,36 +127,6 @@ def print_status(
             print(f"    {Fore.YELLOW}➜ Fix: {Style.BRIGHT}{fix_cmd}{Style.RESET_ALL}")
 
 
-def check_command(command) -> tuple[bool, Optional[str]]:
-    """
-    Checks if a system command is available.
-
-    Args:
-        command (str): The command to check.
-
-    Returns:
-        tuple[bool, Optional[str]]: A tuple containing a boolean indicating
-        whether the command is available and the path to the command if found.
-    """
-    path = shutil.which(command)
-    if path:
-        return True, path
-    return False, None
-
-
-def check_import(module_name) -> bool:
-    """
-    Checks if a Python library is installed.
-
-    Args:
-        module_name (str): The name of the module to check.
-
-    Returns:
-        bool: True if the module is installed, False otherwise.
-    """
-    return importlib.util.find_spec(module_name) is not None
-
-
 def main() -> None:
     helpers.print_banner(subtitle="System Health Check Tool")
     print(f"\n{Fore.CYAN}🏥 Running System Health Check...{Style.RESET_ALL}\n")
@@ -222,7 +150,7 @@ def main() -> None:
         )
     print("")
 
-    total_mem, mem_type = get_memory_info()
+    total_mem, mem_type = helpers.get_memory_info()
 
     if total_mem:
         rec_model, usable_gb, rule_desc, usage_pct = suggest_model(total_mem, mem_type)
@@ -300,7 +228,7 @@ def main() -> None:
 
     # 3. System Dependencies
     print(f"{Fore.WHITE}{Style.DIM}--- System Dependencies ---{Style.RESET_ALL}")
-    has_ffmpeg, ffmpeg_path = check_command("ffmpeg")
+    has_ffmpeg, ffmpeg_path = helpers.check_command("ffmpeg")
     if has_ffmpeg and ffmpeg_path:
         print_status("FFmpeg", True, ffmpeg_path)
     else:
@@ -318,7 +246,7 @@ def main() -> None:
     print(f"{Fore.WHITE}{Style.DIM}--- Python Libraries ---{Style.RESET_ALL}")
     deps = ["torch", "whisper", "watchdog", "pyperclip", "colorama", "tqdm"]
     for dep in deps:
-        if check_import(dep):
+        if helpers.check_import(dep):
             print_status(dep, True, "Installed")
         else:
             print_status(dep, False, fix_cmd=f"pip install {dep}")
