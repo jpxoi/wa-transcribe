@@ -36,7 +36,9 @@ WhisperModel = Any
 def get_compute_device() -> str:
     """
     Smartly selects the best hardware accelerator available.
-    Returns: "mps" (Mac), "cuda" (NVIDIA), or "cpu".
+
+    Returns:
+        str: "mps" (Mac), "cuda" (NVIDIA), or "cpu".
     """
     if torch.backends.mps.is_available():
         return "mps"
@@ -50,7 +52,7 @@ def cleanup_unused_models(current_model_name: str) -> None:
     Deletes unused Whisper models from the cache to save disk space.
 
     Args:
-        current_model_name: The name of the model currently in use (e.g., "medium")
+        current_model_name (str): The name of the model currently in use (e.g., "medium")
     """
     cache_dir: str = os.path.expanduser("~/.cache/whisper")
     if not os.path.exists(cache_dir):
@@ -75,8 +77,8 @@ def save_to_log(text: str, source_file: str) -> None:
     Appends transcript to a daily log file.
 
     Args:
-        text: The transcribed text content.
-        source_file: The full path to the original audio file.
+        text (str): The transcribed text content.
+        source_file (str): The full path to the original audio file.
     """
     if not os.path.exists(config.LOG_FOLDER_PATH):
         os.makedirs(config.LOG_FOLDER_PATH)
@@ -112,6 +114,12 @@ class TranscriptionWorker(threading.Thread):
                 self.queue.task_done()
 
     def process_file(self, filename: str) -> None:
+        """
+        Processes a single audio file and copies the transcript to the clipboard.
+
+        Args:
+            filename (str): The path to the audio file to process.
+        """
         print(f"\n⚡️ Processing: {os.path.basename(filename)}")
 
         # Robust file readiness check
@@ -139,14 +147,20 @@ class TranscriptionWorker(threading.Thread):
     def wait_for_file_ready(self, filepath: str, timeout: int = 10) -> bool:
         """
         Polls the file size to ensure it has finished writing.
-        Returns True if stable, False if timeout.
+
+        Args:
+            filepath (str): The path to the file to check.
+            timeout (int): The maximum time to wait for the file to be ready.
+
+        Returns:
+            bool: True if the file is ready, False if the timeout is reached.
         """
-        start_time = time.time()
-        last_size = -1
+        start_time: float = time.time()
+        last_size: int = -1
 
         while time.time() - start_time < timeout:
             try:
-                current_size = os.path.getsize(filepath)
+                current_size: int = os.path.getsize(filepath)
                 if current_size == last_size and current_size > 0:
                     return True
                 last_size = current_size
@@ -165,6 +179,9 @@ class InternalAudioHandler(FileSystemEventHandler):
     def on_created(self, event: FileSystemEvent) -> None:
         """
         Triggered when a file is created in the watched directory.
+
+        Args:
+            event (FileSystemEvent): The file system event.
         """
         if event.is_directory:
             return
