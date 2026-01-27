@@ -24,15 +24,15 @@ from typing import List, Optional
 # ==============================================================================
 
 # --- 1. MODEL SELECTION ---
-# Controls the balance between speed and accuracy.
+# Choose the balance between speed and accuracy.
 # Options:
-#   - "tiny"            : Less accurate, but faster and uses less memory.
-#   - "base" / "small"  : Fast, low memory. Good for older laptops.
-#   - "medium"          : (Recommended) Best balance for M1/M2/M3 Macs.
-#   - "large-v3"        : Maximum accuracy, but slower and uses ~4GB VRAM.
-#   - "turbo"           : New high-speed model (very fast, good accuracy).
-MODEL_SIZE: str = "medium"
-
+#   - "tiny"            : ⚡️ Fastest, Low Accuracy (~1GB) - Legacy hardware & quick testing
+#   - "base"            : 🚀 Fast, Decent (~1GB) - Fast, everyday transcription
+#   - "small"           : 🏃 Quick, Good (~2GB) - Good for simple tasks
+#   - "medium"          : ⚖️ Balanced, Excellent (~5GB) - High-quality professional use
+#   - "large-v3"        : 🐌 Slowest, Perfect (~10GB) - Complex accents & noisy audio
+#   - "turbo"           : 🏎️ Default, Very Good (~6GB)
+MODEL_SIZE: str = "turbo"
 
 # --- 2. MANUAL PATH OVERRIDE (OPTIONAL) ---
 # If the script cannot find your WhatsApp folder automatically, paste the full path here.

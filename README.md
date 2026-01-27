@@ -75,12 +75,12 @@ The project is ready to run out of the box, but you can customize settings in `c
 Choose the balance between speed and accuracy:
 
 | Model | Speed | Accuracy | Memory | Best For |
-| --- | --- | --- | --- | --- |
-| `tiny` | ⚡️ Fastest | Low | ~1GB | Older Intel Macs |
-| `base` | 🚀 Fast | Decent | ~1GB | Quick summaries |
-| `medium` | ⚖️ **Default** | **Excellent** | ~5GB | **Apple Silicon (M1/M2/M3)** |
-| `large-v3` | 🐌 Slowest | Perfect | ~10GB | Complex accents/noisy audio |
-| `turbo` | 🏎️ Ultra Fast | Very Good | ~6GB | Real-time needs |
+| :--- | :--- | :--- | :--- | :--- |
+| `tiny` | ⚡️ Fastest | Low | ~1GB | Legacy hardware & quick testing |
+| `base` | 🚀 Fast | Decent | ~1GB | Fast, everyday transcription |
+| `medium` | ⚖️ Balanced | Excellent | ~5GB | High-quality professional use |
+| `large-v3` | 🐌 Slowest | Perfect | ~10GB | Complex accents & noisy audio |
+| `turbo` | 🏎️ **Default** | **Very Good** | ~6GB | **Apple Silicon (M1-M5) & Daily use** |
 
 ### 📂 Folder Path (`WHATSAPP_INTERNAL_PATH`)
 
