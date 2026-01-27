@@ -121,8 +121,8 @@ class TranscriptionWorker(threading.Thread):
             return
 
         try:
-            # Transcribe
-            result: dict = self.model.transcribe(filename)
+            # FIX: fp16=False is crucial for M-series chips to avoid NaN errors
+            result: dict = self.model.transcribe(filename, fp16=False)
             text: str = result["text"].strip()
 
             print(f"✅ Transcript: {text}")
