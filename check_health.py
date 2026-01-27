@@ -6,6 +6,7 @@ import os
 import subprocess
 from colorama import init, Fore, Style
 import config
+import helpers
 
 # Initialize colors
 init(autoreset=True)
@@ -66,17 +67,21 @@ def check_gpu():
 
 
 def main():
-    print_banner()
+    helpers.print_banner(subtitle="System Health Check Tool")
     print(f"\n{Fore.CYAN}🏥 Running System Health Check...{Style.RESET_ALL}\n")
 
     all_good = True
 
     # 1. Hardware Acceleration (Informational)
     print(f"{Fore.WHITE}{Style.DIM}--- Hardware Check ---{Style.RESET_ALL}")
-    has_gpu, gpu_name = check_gpu()
-    if has_gpu:
+
+    # We use get_compute_device to check IF it's not CPU
+    device_type = helpers.get_compute_device()
+    device_name = helpers.get_device_name()
+
+    if device_type != "cpu":
         print(
-            f" {Fore.GREEN}🚀{Style.RESET_ALL} {Style.BRIGHT}{'Accelerator':<20}{Style.RESET_ALL} {Fore.GREEN}Active{Style.RESET_ALL} {Style.DIM}({gpu_name}){Style.RESET_ALL}"
+            f" {Fore.GREEN}🚀{Style.RESET_ALL} {Style.BRIGHT}{'Accelerator':<20}{Style.RESET_ALL} {Fore.GREEN}Active{Style.RESET_ALL} {Style.DIM}({device_name}){Style.RESET_ALL}"
         )
     else:
         print(
@@ -86,8 +91,6 @@ def main():
 
     # 2. System Dependencies
     print(f"{Fore.WHITE}{Style.DIM}--- System Dependencies ---{Style.RESET_ALL}")
-
-    # Check FFmpeg
     has_ffmpeg, ffmpeg_path = check_command("ffmpeg")
     if has_ffmpeg:
         print_status("FFmpeg", True, ffmpeg_path)

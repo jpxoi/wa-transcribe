@@ -13,15 +13,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import sys
 import os
-import subprocess
 import time
 import datetime
 import whisper
 import pyperclip
-import torch
 import config
+import helpers
 import queue
 import threading
 from typing import Optional, Any
@@ -32,24 +30,7 @@ from tqdm import tqdm
 
 init(autoreset=True)
 
-# Type alias for the Whisper model object (which is dynamically loaded)
-# We use 'Any' here because whisper.model.Whisper is not easily importable
-# for type hinting without loading the library, but semantically it returns a model class.
 WhisperModel = Any
-
-
-def get_compute_device() -> str:
-    """
-    Smartly selects the best hardware accelerator available.
-
-    Returns:
-        str: "mps" (Mac), "cuda" (NVIDIA), or "cpu".
-    """
-    if torch.backends.mps.is_available():
-        return "mps"
-    if torch.cuda.is_available():
-        return "cuda"
-    return "cpu"
 
 
 def cleanup_unused_models(current_model_name: str) -> None:
@@ -107,24 +88,6 @@ def save_to_log(text: str, source_file: str) -> None:
             f.write("-" * 40 + "\n")
     except IOError as e:
         print(f"{Fore.RED}⚠️ Log Error: {e}")
-
-
-def print_banner():
-    subprocess.run("cls" if os.name == "nt" else "clear", shell=True)
-
-    if os.name == "nt":  # Windows
-        subprocess.run("title WhatsApp Auto-Transcriber", shell=True)
-    else:  # macOS / Linux
-        sys.stdout.write("\x1b]2;WhatsApp Auto-Transcriber\x07")
-
-    # 3. Print ASCII Art
-    print(
-        f"{Fore.GREEN}●{Style.RESET_ALL} {Style.BRIGHT}{config.APP_NAME}{Style.RESET_ALL} {Style.DIM}v{config.APP_VERSION}{Style.RESET_ALL}"
-    )
-    print(
-        f"{Style.DIM}  © 2026 {config.DEVELOPER_NAME} (@{config.DEVELOPER_USERNAME}){Style.RESET_ALL}"
-    )
-    print(f"{Style.DIM}" + "─" * 50 + f"{Style.RESET_ALL}")
 
 
 class TranscriptionWorker(threading.Thread):
@@ -270,7 +233,7 @@ class InternalAudioHandler(FileSystemEventHandler):
 
 
 def main() -> None:
-    print_banner()
+    helpers.print_banner()
 
     # 1. Verify Paths
     if config.WHATSAPP_INTERNAL_PATH is None or not os.path.exists(
@@ -287,7 +250,7 @@ def main() -> None:
     cleanup_unused_models(config.MODEL_SIZE)
 
     # 3. Detect Device & Load Model
-    device = get_compute_device()
+    device = helpers.get_compute_device()
     print("-" * 50)
     print(f"{Fore.CYAN}🚀 Initializing System{Style.RESET_ALL}")
     print(f"   Device: {Style.BRIGHT}{device.upper()}{Style.RESET_ALL}")
