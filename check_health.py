@@ -4,6 +4,7 @@ import importlib.util
 import platform
 import os
 import subprocess
+import torch
 from colorama import init, Fore, Style
 import config
 import helpers
@@ -12,15 +13,76 @@ import helpers
 init(autoreset=True)
 
 
-def print_banner():
-    # Clear screen
-    subprocess.run("cls" if os.name == "nt" else "clear", shell=True)
+def get_memory_info():
+    """
+    Returns tuple: (total_gb, memory_type)
+    memory_type can be: 'vram', 'unified', 'system', or None
+    """
+    try:
+        # 1. Check NVIDIA VRAM
+        if torch.cuda.is_available():
+            total_vram = torch.cuda.get_device_properties(0).total_memory / (1024**3)
+            return total_vram, "vram"
 
-    print(
-        f"{Fore.GREEN}●{Style.RESET_ALL} {Style.BRIGHT}{config.APP_NAME}{Style.RESET_ALL} {Style.DIM}v{config.APP_VERSION}{Style.RESET_ALL}"
-    )
-    print(f"{Style.DIM}  System Health Check Tool{Style.RESET_ALL}")
-    print(f"{Style.DIM}" + "─" * 50 + f"{Style.RESET_ALL}")
+        # 2. Check macOS Unified Memory
+        elif platform.system() == "Darwin":
+            cmd = "sysctl -n hw.memsize"
+            total_bytes = int(subprocess.check_output(cmd.split()).strip())
+            return total_bytes / (1024**3), "unified"
+
+        # 3. Check Linux/Windows System RAM (Fallbacks)
+        # We will return None to avoid guessing wrong.
+        return None, None
+
+    except Exception:
+        return None, None
+
+
+def draw_bar(percent, width=20):
+    """Creates a text-based progress bar."""
+    filled = int(width * percent / 100)
+    bar = "■" * filled + "·" * (width - filled)
+    color = Fore.GREEN if percent < 70 else (Fore.YELLOW if percent < 90 else Fore.RED)
+    return f"{color}[{bar}] {percent:.0f}%{Style.RESET_ALL}"
+
+
+def suggest_model(total_gb, mem_type):
+    """
+    Calculates usable memory based on strict safety rules.
+    """
+    if total_gb is None:
+        return "base", 0, "Unknown", 0
+
+    # --- 1. DEFINE RULES ---
+    if mem_type == "vram":
+        usable_gb = total_gb * config.NVIDIA_VRAM_LIMIT_FACTOR
+        rule_desc = (
+            f"{config.NVIDIA_VRAM_LIMIT_FACTOR * 100}% of VRAM ({total_gb:.1f}GB)"
+        )
+    else:
+        usable_gb = total_gb * config.SYSTEM_MEMORY_LIMIT_FACTOR
+        rule_desc = f"{config.SYSTEM_MEMORY_LIMIT_FACTOR * 100}% of System RAM ({total_gb:.1f}GB)"
+
+    # --- 2. MODEL REQUIREMENTS (Approx GB) ---
+    reqs = {
+        "large": 10.0,
+        "turbo": 6.0,
+        "medium": 5.0,
+        "small": 2.0,
+        "base": 1.0,
+        "tiny": 1.0,
+    }
+
+    # --- 3. SELECTION LOGIC WITH OVERHEAD CALCULATION ---
+    rec_model = "tiny"
+    # Iterate through models to find the largest one that leaves at least 30% overhead
+    for model_name in ["large", "turbo", "medium", "small", "base"]:
+        if usable_gb > 0 and (reqs[model_name] / usable_gb) <= 0.7:
+            rec_model = model_name
+            break
+
+    usage_pct = (reqs[rec_model] / usable_gb) * 100 if usable_gb > 0 else 100
+    return rec_model, usable_gb, rule_desc, usage_pct
 
 
 def print_status(component: str, status: bool, details: str = "", fix_cmd: str = ""):
@@ -87,6 +149,87 @@ def main():
         print(
             f" {Fore.YELLOW}⚠️{Style.RESET_ALL} {Style.BRIGHT}{'Accelerator':<20}{Style.RESET_ALL} {Fore.YELLOW}None{Style.RESET_ALL} {Style.DIM}(Running on CPU - expects slower performance){Style.RESET_ALL}"
         )
+    print("")
+
+    total_mem, mem_type = get_memory_info()
+
+    # Model Recommendation
+    if total_mem:
+        rec_model, usable_gb, rule_desc, usage_pct = suggest_model(total_mem, mem_type)
+
+        print(
+            f" {Fore.BLUE}💾{Style.RESET_ALL} {Style.BRIGHT}{'Memory Rule':<20}{Style.RESET_ALL} {Fore.BLUE}{rule_desc}{Style.RESET_ALL}"
+        )
+        print(
+            f"     {Style.DIM}Safe Allowance:      {usable_gb:.1f} GB{Style.RESET_ALL}"
+        )
+
+        current_model = config.MODEL_SIZE
+
+        # Draw the comparison
+        print(f"\n   {Style.BRIGHT}Optimization Analysis:{Style.RESET_ALL}")
+
+        # Recommended Line
+        print(
+            f"   Recommended ({rec_model}): {draw_bar(usage_pct)} {Style.DIM}(Leaves ~{usable_gb - (usable_gb * (usage_pct / 100)):.1f} GB Headroom){Style.RESET_ALL}"
+        )
+
+        print(f"\n   {Style.BRIGHT}Result:{Style.RESET_ALL}")
+        print(
+            f"   We suggest:          {Fore.GREEN}{Style.BRIGHT}'{rec_model}'{Style.RESET_ALL}"
+        )
+        print(f"   Your Config:         {Fore.CYAN}'{current_model}'{Style.RESET_ALL}")
+
+        # Intelligent Suggestions based on comparison
+        req_map = {
+            "tiny": 1,
+            "base": 1,
+            "small": 2,
+            "medium": 5,
+            "turbo": 6,
+            "large": 10,
+        }
+        current_req = req_map.get(current_model, 6)
+
+        if current_req > usable_gb:
+            print(
+                f"\n   {Fore.RED}CRITICAL: '{current_model}' is too large for your system.{Style.RESET_ALL}"
+            )
+            print(
+                f"      It requires ~{current_req}GB, but you only have {usable_gb:.1f}GB safe."
+            )
+            print(
+                f"      {Fore.YELLOW}➜ Switch to '{rec_model}' in config.py{Style.RESET_ALL}"
+            )
+
+        elif current_model == "large" and rec_model == "turbo":
+            print(f"\n   {Fore.YELLOW}ADVICE: You are using 'large'.{Style.RESET_ALL}")
+            print(
+                f"      While your system can handle it, {Fore.GREEN}'turbo'{Style.RESET_ALL} is 8x faster"
+            )
+            print("      and uses 4GB less RAM with similar accuracy.")
+
+        elif current_req < req_map.get(rec_model, 6):
+            print(
+                f"\n   {Fore.BLUE}OPTIMIZATION: Your hardware is under-utilized.{Style.RESET_ALL}"
+            )
+            print(
+                f"      You are using '{current_model}', but your system can handle {Fore.GREEN}'{rec_model}'{Style.RESET_ALL}."
+            )
+            print(
+                f"      {Fore.YELLOW}➜ Switch to '{rec_model}' in config.py for better transcription accuracy.{Style.RESET_ALL}"
+            )
+
+        elif current_model == rec_model:
+            print(
+                f"   {Fore.GREEN}✅ You are using the optimal model for your hardware.{Style.RESET_ALL}"
+            )
+
+    else:
+        print(
+            f" {Fore.YELLOW}⚠️{Style.RESET_ALL} {Style.BRIGHT}{'Memory Check':<20}{Style.RESET_ALL} {Fore.YELLOW}Skipped{Style.RESET_ALL}"
+        )
+
     print("")
 
     # 2. System Dependencies

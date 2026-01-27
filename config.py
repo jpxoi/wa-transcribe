@@ -47,6 +47,24 @@ MANUAL_PATH_OVERRIDE: Optional[str] = None
 TRANSCRIPTION_LANGUAGE: Optional[str] = None
 
 
+# --- 4. MEMORY MANAGEMENT ---
+# Adjust how aggressively the script uses your system memory.
+# Recommended Values:
+#   - 0.3 (Eco)        : Minimal impact, keeps the system responsive for other apps.
+#   - 0.5 (Safe)       : Stable default, recommended for general multitasking.
+#   - 0.7 (Balanced)   : High performance, ideal for 'medium' or 'large' models.
+#   - 0.9 (Aggressive) : Maximum speed, utilizes almost all available system memory.
+SYSTEM_MEMORY_LIMIT_FACTOR: float = 0.5
+
+# Adjust how aggressively the script uses your NVIDIA GPU memory.
+# Recommended Values:
+#   - 0.3 (Eco)        : Minimal impact, keeps the system responsive for other apps.
+#   - 0.5 (Safe)       : Stable default, recommended for general multitasking.
+#   - 0.7 (Balanced)   : High performance, ideal for 'medium' or 'large' models.
+#   - 0.9 (Aggressive) : Maximum speed, utilizes almost all available system memory.
+NVIDIA_VRAM_LIMIT_FACTOR: float = 0.7
+
+
 # ==============================================================================
 #   ⛔️ SYSTEM CONFIGURATION (DO NOT EDIT BELOW THIS LINE)
 #   Internal logic for path detection, logging, and OS handling.
