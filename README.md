@@ -15,15 +15,15 @@ A lightning-fast, privacy-focused tool that automatically transcribes incoming W
 ## ✨ Features
 
 * **⚡️ Hardware Accelerated:**
-* **macOS:** Native Metal Performance Shaders (MPS) for M1/M2/M3/M4 chips.
-* **Windows:** Native NVIDIA CUDA support for GeForce RTX cards.
+  * **macOS:** Native Metal Performance Shaders (MPS) for M1/M2/M3/M4 chips.
+  * **Windows:** Native NVIDIA CUDA support for GeForce RTX cards.
 
 * **📂 Intelligent Monitoring:** Uses a threaded `Watchdog` observer to detect voice notes instantly without locking your system.
 * **🏥 System Health Check:** Includes a utility to analyze your RAM/VRAM and suggest the optimal AI model size to prevent crashes.
 * **🧹 Smart Maintenance:** Automatically cleans up AI models that haven't been used in 7 days to save disk space.
 * **📋 Auto-Clipboard & Logging:**
-* Text is copied to clipboard (`Cmd+V` / `Ctrl+V`).
-* Transcripts are saved to daily logs (e.g., `2026-01-27-Transcripts.txt`).
+  * Text is copied to clipboard (`Cmd+V` / `Ctrl+V`).
+  * Transcripts are saved to daily logs (e.g., `2026-01-27-Transcripts.txt`).
 
 ## 🚀 Prerequisites
 
