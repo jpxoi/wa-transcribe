@@ -102,3 +102,7 @@ KNOWN_MODELS: List[str] = [
     "small.en.pt",
     "medium.en.pt",
 ]
+
+VERSION: str = "1.0"
+DEVELOPER_NAME: str = "Jean Paul Fernandez"
+DEVELOPER_USERNAME: str = "jpxoi"

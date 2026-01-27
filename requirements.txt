@@ -2,3 +2,5 @@ openai-whisper
 pyperclip
 watchdog
 torch
+colorama
+tqdm

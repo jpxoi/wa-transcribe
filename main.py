@@ -15,6 +15,7 @@
 
 
 import os
+import subprocess
 import time
 import datetime
 import whisper
@@ -26,6 +27,10 @@ import threading
 from typing import Optional, Any
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler, FileSystemEvent
+from colorama import init, Fore, Style
+from tqdm import tqdm
+
+init(autoreset=True)
 
 # Type alias for the Whisper model object (which is dynamically loaded)
 # We use 'Any' here because whisper.model.Whisper is not easily importable
@@ -59,7 +64,9 @@ def cleanup_unused_models(current_model_name: str) -> None:
     retention_period = 7 * 24 * 60 * 60  # 7 days in seconds
     current_time = time.time()
 
-    print("🧹 Maintenance: Checking for old, unused models...")
+    print(
+        f"{Fore.CYAN}🧹 Maintenance:{Style.RESET_ALL} Checking for old, unused models..."
+    )
 
     for filename in os.listdir(cache_dir):
         if filename in config.KNOWN_MODELS and filename != keep_filename:
@@ -69,7 +76,9 @@ def cleanup_unused_models(current_model_name: str) -> None:
 
                 if (current_time - last_access) > retention_period:
                     os.remove(file_path)
-                    print(f"   🗑️ Deleted old model (unused for >7 days): {filename}")
+                    print(
+                        f"   {Fore.YELLOW}🗑️ Deleted old model:{Style.RESET_ALL} {filename}"
+                    )
                 else:
                     pass
             except OSError:
@@ -97,7 +106,19 @@ def save_to_log(text: str, source_file: str) -> None:
             f.write(f"{text}\n")
             f.write("-" * 40 + "\n")
     except IOError as e:
-        print(f"⚠️ Could not save log: {e}")
+        print(f"{Fore.RED}⚠️ Log Error: {e}")
+
+
+def print_banner():
+    subprocess.run("cls" if os.name == "nt" else "clear", shell=True)
+
+    print(
+        f"{Fore.GREEN}●{Style.RESET_ALL} {Style.BRIGHT}WhatsApp Auto-Transcriber{Style.RESET_ALL} {Style.DIM}v{config.VERSION}{Style.RESET_ALL}"
+    )
+    print(
+        f"{Style.DIM}  © 2026 {config.DEVELOPER_NAME} (@{config.DEVELOPER_USERNAME}){Style.RESET_ALL}"
+    )
+    print(f"{Style.DIM}" + "─" * 50 + f"{Style.RESET_ALL}")
 
 
 class TranscriptionWorker(threading.Thread):
@@ -124,35 +145,63 @@ class TranscriptionWorker(threading.Thread):
         Args:
             filename (str): The path to the audio file to process.
         """
-        print(f"\n⚡️ Processing: {os.path.basename(filename)}")
+        file_base = os.path.basename(filename)
+        pending_count = self.queue.qsize()
+        queue_msg = f" ({pending_count} more in queue)" if pending_count > 0 else ""
 
+        # Wait for file readiness
         if not self.wait_for_file_ready(filename):
-            print(f"⚠️ Timeout waiting for file: {filename}")
+            print(
+                f"{Fore.RED}❌ [TIMEOUT]{Style.RESET_ALL} File not ready: {file_base}"
+            )
             return
+
+        try:
+            audio = whisper.load_audio(filename)
+            duration_secs = len(audio) / whisper.audio.SAMPLE_RATE
+            duration_fmt = f"{duration_secs:.1f}s"
+        except Exception:
+            duration_fmt = "Unknown duration"
+
+        # Updated Print Statement with Timestamp and Duration
+        timestamp = datetime.datetime.now().strftime("%H:%M:%S")
+        print(
+            f"\n{Style.DIM}[{timestamp}]{Style.RESET_ALL} {Fore.CYAN}⚡️ [WORKING]{Style.RESET_ALL} Processing: {Style.BRIGHT}{file_base}{Style.RESET_ALL} {Style.DIM}({duration_fmt}){queue_msg}"
+        )
+
+        start_time = time.time()
 
         try:
             # Smart FP16 selection:
             # CUDA (NVIDIA) benefits from FP16.
             # MPS (Mac) and CPU usually require FP32 (fp16=False) to avoid issues.
             use_fp16 = False
-            if hasattr(self.model, "device"):
-                if self.model.device.type == "cuda":
-                    use_fp16 = True
+            if hasattr(self.model, "device") and self.model.device.type == "cuda":
+                use_fp16 = True
 
             # Transcribe
             result: dict = self.model.transcribe(filename, fp16=use_fp16)
             text: str = result["text"].strip()
 
-            print(f"✅ Transcript: {text}")
+            elapsed = time.time() - start_time
 
-            # Copy to Clipboard
-            pyperclip.copy(text)
+            # 4. Success Output
+            print(
+                f"{Fore.GREEN}✅ [DONE in {elapsed:.1f}s]{Style.RESET_ALL} Transcript:"
+            )
+            print(f"{Fore.WHITE}{Style.DIM}   {text}")
 
-            # Save to Log
+            # 5. Clipboard & Log
+            try:
+                pyperclip.copy(text)
+                print(f"{Fore.BLUE}   📋 Copied to clipboard")
+            except Exception:
+                print(f"{Fore.YELLOW}   ⚠️ Clipboard unavailable")
+
             save_to_log(text, filename)
 
         except Exception as e:
-            print(f"❌ Error processing file: {e}")
+            print(f"{Fore.RED}❌ [ERROR]{Style.RESET_ALL} {e}")
 
     def wait_for_file_ready(self, filepath: str, timeout: int = 10) -> bool:
         """
@@ -206,16 +255,22 @@ class InternalAudioHandler(FileSystemEventHandler):
                 return
             self.last_transcribed = filename
 
-            print(f"📥 Queued: {os.path.basename(filename)}")
+            print(
+                f"{Fore.MAGENTA}📥 [NEW]{Style.RESET_ALL} Detected: {os.path.basename(filename)}"
+            )
             self.queue.put(filename)
 
 
 def main() -> None:
+    print_banner()
+
     # 1. Verify Paths
     if config.WHATSAPP_INTERNAL_PATH is None or not os.path.exists(
         config.WHATSAPP_INTERNAL_PATH
     ):
-        print("❌ Error: Could not find WhatsApp Media folder.")
+        print(
+            f"{Fore.RED}❌ Error:{Style.RESET_ALL} Could not find WhatsApp Media folder."
+        )
         print(f"   OS Detected: {config.CURRENT_OS}")
         print("   Please open 'config.py' and manually set WHATSAPP_INTERNAL_PATH.")
         return
@@ -224,33 +279,37 @@ def main() -> None:
     cleanup_unused_models(config.MODEL_SIZE)
 
     # 3. Detect Device & Load Model
-    device: str = get_compute_device()
-    print(f"🚀 Loading Whisper Model ({config.MODEL_SIZE}) on {device.upper()}...")
+    device = get_compute_device()
+    print("-" * 50)
+    print(f"{Fore.CYAN}🚀 Initializing System{Style.RESET_ALL}")
+    print(f"   Device: {Style.BRIGHT}{device.upper()}{Style.RESET_ALL}")
+    print(f"   Model:  {Style.BRIGHT}{config.MODEL_SIZE}{Style.RESET_ALL}")
 
     model: WhisperModel
     try:
-        model = whisper.load_model(config.MODEL_SIZE, device=device)
+        # We wrap this purely to show we are busy, though tqdm won't actually "progress"
+        # nicely during a single function call, it adds a nice timestamp.
+        with tqdm(total=1, bar_format="{desc}", desc="   ⏳ Loading...") as pbar:
+            model = whisper.load_model(config.MODEL_SIZE, device=device)
+            pbar.update(1)
     except RuntimeError as e:
-        print(f"⚠️ Failed to load on {device}: {e}")
+        print(f"{Fore.RED}⚠️ Failed to load on {device}: {e}")
         print("   Falling back to CPU...")
         model = whisper.load_model(config.MODEL_SIZE, device="cpu")
 
+    print(f"{Fore.GREEN}✅ System Ready!{Style.RESET_ALL}")
+
     # 4. Start Watching
     audio_queue: queue.Queue = queue.Queue()
-
-    # Start the worker thread
     worker = TranscriptionWorker(model, audio_queue)  # noqa: F841
 
     event_handler = InternalAudioHandler(audio_queue)
     observer = Observer()
-
-    # We ignore the type error here because Observer.schedule expects a specific path type
-    # but our config guarantees a string path if the check passes.
     observer.schedule(event_handler, path=config.WHATSAPP_INTERNAL_PATH, recursive=True)
 
-    print(f"\n👀 Watching: {config.WHATSAPP_INTERNAL_PATH}")
-    print(f"📝 Logs: {config.LOG_FOLDER_PATH}")
-    print("---------------------------------------------------")
+    print(f"\n{Fore.CYAN}👀 Watching Folder:{Style.RESET_ALL}")
+    print(f"   {config.WHATSAPP_INTERNAL_PATH}")
+    print("-" * 50)
     print("   Press Ctrl+C to stop the script.")
 
     observer.start()
@@ -259,7 +318,7 @@ def main() -> None:
             time.sleep(1)
     except KeyboardInterrupt:
         observer.stop()
-        print("\n🛑 Stopping Transcriber.")
+        print(f"\n{Fore.RED}🛑 Stopping Transcriber.{Style.RESET_ALL}")
     observer.join()
 
 
