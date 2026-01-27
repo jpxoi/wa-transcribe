@@ -21,6 +21,8 @@ import whisper
 import pyperclip
 import torch
 import config
+import queue
+import threading
 from typing import Optional, Any
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler, FileSystemEvent
@@ -92,9 +94,72 @@ def save_to_log(text: str, source_file: str) -> None:
         print(f"⚠️ Could not save log: {e}")
 
 
+class TranscriptionWorker(threading.Thread):
+    def __init__(self, model: WhisperModel, audio_queue: queue.Queue) -> None:
+        super().__init__()
+        self.model = model
+        self.queue = audio_queue
+        # Daemon means this thread dies when the main program exits
+        self.daemon = True
+        self.start()
+
+    def run(self) -> None:
+        while True:
+            filename: str = self.queue.get()
+            try:
+                self.process_file(filename)
+            finally:
+                self.queue.task_done()
+
+    def process_file(self, filename: str) -> None:
+        print(f"\n⚡️ Processing: {os.path.basename(filename)}")
+
+        # Robust file readiness check
+        # Waits until file size is stable (file write is complete)
+        if not self.wait_for_file_ready(filename):
+            print(f"⚠️ Timeout waiting for file: {filename}")
+            return
+
+        try:
+            # Transcribe
+            result: dict = self.model.transcribe(filename)
+            text: str = result["text"].strip()
+
+            print(f"✅ Transcript: {text}")
+
+            # Copy to Clipboard
+            pyperclip.copy(text)
+
+            # Save to Log
+            save_to_log(text, filename)
+
+        except Exception as e:
+            print(f"❌ Error processing file: {e}")
+
+    def wait_for_file_ready(self, filepath: str, timeout: int = 10) -> bool:
+        """
+        Polls the file size to ensure it has finished writing.
+        Returns True if stable, False if timeout.
+        """
+        start_time = time.time()
+        last_size = -1
+
+        while time.time() - start_time < timeout:
+            try:
+                current_size = os.path.getsize(filepath)
+                if current_size == last_size and current_size > 0:
+                    return True
+                last_size = current_size
+                time.sleep(0.5)
+            except OSError:
+                time.sleep(0.5)
+
+        return False
+
+
 class InternalAudioHandler(FileSystemEventHandler):
-    def __init__(self, model: WhisperModel) -> None:
-        self.model: WhisperModel = model
+    def __init__(self, audio_queue: queue.Queue) -> None:
+        self.queue: queue.Queue = audio_queue
         self.last_transcribed: Optional[str] = None
 
     def on_created(self, event: FileSystemEvent) -> None:
@@ -104,7 +169,7 @@ class InternalAudioHandler(FileSystemEventHandler):
         if event.is_directory:
             return
 
-        # src_path is strictly a string in this context, but type hint suggests Union[str, bytes]
+        # src_path is strictly a string in this context
         filename: str = str(event.src_path)
 
         # Watch for common audio extensions
@@ -114,27 +179,8 @@ class InternalAudioHandler(FileSystemEventHandler):
                 return
             self.last_transcribed = filename
 
-            print(f"\n⚡️ New Audio Detected: {os.path.basename(filename)}")
-
-            try:
-                # Wait for file write to complete (network latency/disk IO)
-                time.sleep(1.0)
-
-                # Transcribe
-                # The transcribe method returns a Dictionary with keys like "text", "segments", etc.
-                result: dict = self.model.transcribe(filename)
-                text: str = result["text"].strip()
-
-                print(f"✅ Transcript: {text}")
-
-                # Copy to Clipboard
-                pyperclip.copy(text)
-
-                # Save to Log
-                save_to_log(text, filename)
-
-            except Exception as e:
-                print(f"❌ Error processing file: {e}")
+            print(f"📥 Queued: {os.path.basename(filename)}")
+            self.queue.put(filename)
 
 
 def main() -> None:
@@ -163,7 +209,12 @@ def main() -> None:
         model = whisper.load_model(config.MODEL_SIZE, device="cpu")
 
     # 4. Start Watching
-    event_handler = InternalAudioHandler(model)
+    audio_queue: queue.Queue = queue.Queue()
+
+    # Start the worker thread
+    worker = TranscriptionWorker(model, audio_queue)  # noqa: F841
+
+    event_handler = InternalAudioHandler(audio_queue)
     observer = Observer()
 
     # We ignore the type error here because Observer.schedule expects a specific path type
