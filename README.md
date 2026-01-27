@@ -1,11 +1,13 @@
 # 🎙️ WhatsApp Auto-Transcriber
 
-A lightning-fast, privacy-focused tool that automatically transcribes incoming WhatsApp voice notes on macOS (and Windows) using OpenAI's Whisper model.
+A lightning-fast, privacy-focused tool that automatically transcribes incoming WhatsApp voice notes on macOS and Windows using OpenAI's Whisper model.
+
+**Why?** WhatsApp's native transcription is often slow, inaccurate, or simply unavailable in many regions. This tool provides a superior, 100% local alternative that works instantly the moment a voice note is downloaded.
 
 > [!IMPORTANT]
-> **Desktop Only:** This tool requires the official **WhatsApp Desktop App** (Mac App Store or Windows Store version). It **does not work** with WhatsApp Web because the web version does not store audio files locally in a persistent folder.
+> **Desktop Only:** This tool requires the official **WhatsApp Desktop App** (Mac App Store or Windows Store version). It **does not work** with WhatsApp Web because the web version does not store audio files locally.
 
-**Optimized for Apple Silicon (M1/M2/M3/M4)** to run purely on the GPU/NPU, keeping your CPU cool and battery life high.
+**Optimized for Apple Silicon (M1/M2/M3/M4)** to run natively on the GPU/NPU, keeping your CPU cool and battery life high.
 
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python&logoColor=white)
 ![OpenAI Whisper](https://img.shields.io/badge/AI-OpenAI%20Whisper-green?logo=openai&logoColor=white)
