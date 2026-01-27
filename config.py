@@ -51,17 +51,17 @@ TRANSCRIPTION_LANGUAGE: Optional[str] = None
 # Adjust how aggressively the script uses your system memory.
 # Recommended Values:
 #   - 0.3 (Eco)        : Minimal impact, keeps the system responsive for other apps.
-#   - 0.5 (Safe)       : Stable default, recommended for general multitasking.
+#   - 0.5 (Safe)       : (Recommended) Stable default, recommended for general multitasking.
 #   - 0.7 (Balanced)   : High performance, ideal for 'medium' or 'large' models.
 #   - 0.9 (Aggressive) : Maximum speed, utilizes almost all available system memory.
 SYSTEM_MEMORY_LIMIT_FACTOR: float = 0.5
 
-# Adjust how aggressively the script uses your NVIDIA GPU memory.
+# --- 5. GPU VRAM MANAGEMENT ---
+# Adjust how aggressively the script uses your dedicated NVIDIA GPU memory (VRAM).
 # Recommended Values:
-#   - 0.3 (Eco)        : Minimal impact, keeps the system responsive for other apps.
-#   - 0.5 (Safe)       : Stable default, recommended for general multitasking.
-#   - 0.7 (Balanced)   : High performance, ideal for 'medium' or 'large' models.
-#   - 0.9 (Aggressive) : Maximum speed, utilizes almost all available system memory.
+#   - 0.3 (Eco)        : Minimal impact, keeps other GPU-accelerated apps responsive.
+#   - 0.7 (Standard)   : (Recommended) Optimized for dedicated GPU performance.
+#   - 0.9 (Aggressive) : Maximum speed, utilizes almost all available VRAM.
 NVIDIA_VRAM_LIMIT_FACTOR: float = 0.7
 
 

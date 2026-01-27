@@ -5,6 +5,7 @@ import platform
 import os
 import subprocess
 import torch
+from typing import Optional, Literal
 from colorama import init, Fore, Style
 import config
 import helpers
@@ -13,8 +14,12 @@ import helpers
 init(autoreset=True)
 
 
-def get_memory_info():
+def get_memory_info() -> tuple[
+    Optional[float], Literal["vram", "unified", "system"] | None
+]:
     """
+    Gets the total memory information.
+
     Returns tuple: (total_gb, memory_type)
     memory_type can be: 'vram', 'unified', 'system', or None
     """
@@ -38,24 +43,47 @@ def get_memory_info():
         return None, None
 
 
-def draw_bar(percent, width=20):
-    """Creates a text-based progress bar."""
+def draw_bar(percent, width=20) -> str:
+    """
+    Creates a text-based progress bar.
+
+    Args:
+        percent (float): The percentage to fill the bar.
+        width (int, optional): The width of the bar. Defaults to 20.
+
+    Returns:
+        str: The formatted progress bar.
+    """
     filled = int(width * percent / 100)
     bar = "■" * filled + "·" * (width - filled)
     color = Fore.GREEN if percent < 70 else (Fore.YELLOW if percent < 90 else Fore.RED)
     return f"{color}[{bar}] {percent:.0f}%{Style.RESET_ALL}"
 
 
-def suggest_model(total_gb, mem_type):
+def suggest_model(
+    total_gb, mem_type
+) -> tuple[
+    Literal["large", "turbo", "medium", "small", "base", "tiny"], float, str, float
+]:
     """
     Calculates usable memory based on strict safety rules.
+
+    Args:
+        total_gb (float): The total amount of memory in GB.
+        mem_type (Literal['vram', 'unified', 'system', None]): The type of memory.
+
+    Returns:
+        tuple: (model_name, usable_gb, rule_desc, usage_pct)
     """
     if total_gb is None:
         return "base", 0, "Unknown", 0
 
     # --- 1. DEFINE RULES ---
     if mem_type == "vram":
-        usable_gb = total_gb * config.NVIDIA_VRAM_LIMIT_FACTOR
+        min_free_vram = 2.0
+        usable_gb = min(
+            total_gb * config.NVIDIA_VRAM_LIMIT_FACTOR, total_gb - min_free_vram
+        )
         rule_desc = (
             f"{config.NVIDIA_VRAM_LIMIT_FACTOR * 100}% of VRAM ({total_gb:.1f}GB)"
         )
@@ -74,9 +102,17 @@ def suggest_model(total_gb, mem_type):
     }
 
     # --- 3. SELECTION LOGIC WITH OVERHEAD CALCULATION ---
-    rec_model = "tiny"
+    rec_model: Literal["large", "turbo", "medium", "small", "base", "tiny"] = "tiny"
+
     # Iterate through models to find the largest one that leaves at least 30% overhead
-    for model_name in ["large", "turbo", "medium", "small", "base"]:
+    candidates: list[Literal["large", "turbo", "medium", "small", "base", "tiny"]] = [
+        "large",
+        "turbo",
+        "medium",
+        "small",
+        "base",
+    ]
+    for model_name in candidates:
         if usable_gb > 0 and (reqs[model_name] / usable_gb) <= 0.7:
             rec_model = model_name
             break
@@ -85,8 +121,18 @@ def suggest_model(total_gb, mem_type):
     return rec_model, usable_gb, rule_desc, usage_pct
 
 
-def print_status(component: str, status: bool, details: str = "", fix_cmd: str = ""):
-    """Prints a standardized status line."""
+def print_status(
+    component: str, status: bool, details: str = "", fix_cmd: str = ""
+) -> None:
+    """
+    Prints a standardized status line.
+
+    Args:
+        component (str): The component being checked.
+        status (bool): Whether the component is found or not.
+        details (str, optional): Additional details about the component. Defaults to "".
+        fix_cmd (str, optional): Command to fix the issue. Defaults to "".
+    """
     if status:
         icon = f"{Fore.GREEN}✅{Style.RESET_ALL}"
         print(
@@ -101,23 +147,47 @@ def print_status(component: str, status: bool, details: str = "", fix_cmd: str =
             print(f"    {Fore.YELLOW}➜ Fix: {Style.BRIGHT}{fix_cmd}{Style.RESET_ALL}")
 
 
-def check_command(command):
-    """Checks if a system command is available."""
+def check_command(command) -> tuple[bool, Optional[str]]:
+    """
+    Checks if a system command is available.
+
+    Args:
+        command (str): The command to check.
+
+    Returns:
+        tuple[bool, Optional[str]]: A tuple containing a boolean indicating
+        whether the command is available and the path to the command if found.
+    """
     path = shutil.which(command)
     if path:
         return True, path
     return False, None
 
 
-def check_import(module_name):
-    """Checks if a Python library is installed."""
+def check_import(module_name) -> bool:
+    """
+    Checks if a Python library is installed.
+
+    Args:
+        module_name (str): The name of the module to check.
+
+    Returns:
+        bool: True if the module is installed, False otherwise.
+    """
     if importlib.util.find_spec(module_name):
         return True
     return False
 
 
-def check_gpu():
-    """Detects available hardware acceleration."""
+def check_gpu() -> tuple[bool, Optional[str]]:
+    """
+    Detects available hardware acceleration.
+
+    Returns:
+        tuple[bool, Optional[str]]: A tuple containing a boolean indicating
+        whether hardware acceleration is available and a string indicating
+        the type of hardware acceleration if available.
+    """
     import torch
 
     if torch.cuda.is_available():
@@ -128,7 +198,7 @@ def check_gpu():
         return False, "CPU Only"
 
 
-def main():
+def main() -> None:
     helpers.print_banner(subtitle="System Health Check Tool")
     print(f"\n{Fore.CYAN}🏥 Running System Health Check...{Style.RESET_ALL}\n")
 
@@ -235,7 +305,7 @@ def main():
     # 2. System Dependencies
     print(f"{Fore.WHITE}{Style.DIM}--- System Dependencies ---{Style.RESET_ALL}")
     has_ffmpeg, ffmpeg_path = check_command("ffmpeg")
-    if has_ffmpeg:
+    if has_ffmpeg and ffmpeg_path:
         print_status("FFmpeg", True, ffmpeg_path)
     else:
         fix = (
