@@ -1,3 +1,19 @@
+# Copyright (C) 2026 Jean Paul Fernandez
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+
 import sys
 import shutil
 import importlib.util
@@ -5,13 +21,23 @@ import platform
 import os
 import subprocess
 import torch
-from typing import Optional, Literal
+from typing import Optional, Literal, Dict
 from colorama import init, Fore, Style
 import config
 import helpers
 
 # Initialize colors
 init(autoreset=True)
+
+# Centralized Definition of Model Requirements (GB)
+MODEL_REQUIREMENTS: Dict[str, float] = {
+    "large": 10.0,
+    "turbo": 6.0,
+    "medium": 5.0,
+    "small": 2.0,
+    "base": 1.0,
+    "tiny": 1.0,
+}
 
 
 def get_memory_info() -> tuple[
@@ -20,12 +46,13 @@ def get_memory_info() -> tuple[
     """
     Gets the total memory information.
 
-    Returns tuple: (total_gb, memory_type)
-    memory_type can be: 'vram', 'unified', 'system', or None
+    Returns:
+        tuple: (total_gb, memory_type)
     """
     try:
         # 1. Check NVIDIA VRAM
         if torch.cuda.is_available():
+            # torch.cuda.get_device_properties(0).total_memory returns bytes
             total_vram = torch.cuda.get_device_properties(0).total_memory / (1024**3)
             return total_vram, "vram"
 
@@ -35,8 +62,15 @@ def get_memory_info() -> tuple[
             total_bytes = int(subprocess.check_output(cmd.split()).strip())
             return total_bytes / (1024**3), "unified"
 
-        # 3. Check Linux/Windows System RAM (Fallbacks)
-        # We will return None to avoid guessing wrong.
+        # 3. Check Linux System RAM
+        elif platform.system() == "Linux":
+            with open("/proc/meminfo", "r") as f:
+                for line in f:
+                    if "MemTotal" in line:
+                        kb_value = int(line.split()[1])
+                        return kb_value / (1024**2), "system"
+
+        # 4. Windows Fallback
         return None, None
 
     except Exception:
@@ -54,17 +88,17 @@ def draw_bar(percent, width=20) -> str:
     Returns:
         str: The formatted progress bar.
     """
+    percent = max(0.0, min(100.0, percent))
     filled = int(width * percent / 100)
     bar = "■" * filled + "·" * (width - filled)
+
     color = Fore.GREEN if percent < 70 else (Fore.YELLOW if percent < 90 else Fore.RED)
     return f"{color}[{bar}] {percent:.0f}%{Style.RESET_ALL}"
 
 
 def suggest_model(
-    total_gb, mem_type
-) -> tuple[
-    Literal["large", "turbo", "medium", "small", "base", "tiny"], float, str, float
-]:
+    total_gb: Optional[float], mem_type: Optional[str]
+) -> tuple[str, float, str, float]:
     """
     Calculates usable memory based on strict safety rules.
 
@@ -75,14 +109,15 @@ def suggest_model(
     Returns:
         tuple: (model_name, usable_gb, rule_desc, usage_pct)
     """
-    if total_gb is None:
-        return "base", 0, "Unknown", 0
+    if total_gb is None or mem_type is None:
+        return "base", 0.0, "Unknown", 0.0
 
     # --- 1. DEFINE RULES ---
     if mem_type == "vram":
+        # Leave 2GB buffer for display/OS overhead on GPU
         min_free_vram = 2.0
         usable_gb = min(
-            total_gb * config.NVIDIA_VRAM_LIMIT_FACTOR, total_gb - min_free_vram
+            total_gb * config.NVIDIA_VRAM_LIMIT_FACTOR, max(0, total_gb - min_free_vram)
         )
         rule_desc = (
             f"{config.NVIDIA_VRAM_LIMIT_FACTOR * 100}% of VRAM ({total_gb:.1f}GB)"
@@ -91,33 +126,18 @@ def suggest_model(
         usable_gb = total_gb * config.SYSTEM_MEMORY_LIMIT_FACTOR
         rule_desc = f"{config.SYSTEM_MEMORY_LIMIT_FACTOR * 100}% of System RAM ({total_gb:.1f}GB)"
 
-    # --- 2. MODEL REQUIREMENTS (Approx GB) ---
-    reqs = {
-        "large": 10.0,
-        "turbo": 6.0,
-        "medium": 5.0,
-        "small": 2.0,
-        "base": 1.0,
-        "tiny": 1.0,
-    }
+    # --- 2. SELECTION LOGIC ---
+    sorted_models = sorted(MODEL_REQUIREMENTS.items(), key=lambda x: x[1], reverse=True)
 
-    # --- 3. SELECTION LOGIC WITH OVERHEAD CALCULATION ---
-    rec_model: Literal["large", "turbo", "medium", "small", "base", "tiny"] = "tiny"
-
-    # Iterate through models to find the largest one that leaves at least 30% overhead
-    candidates: list[Literal["large", "turbo", "medium", "small", "base", "tiny"]] = [
-        "large",
-        "turbo",
-        "medium",
-        "small",
-        "base",
-    ]
-    for model_name in candidates:
-        if usable_gb > 0 and (reqs[model_name] / usable_gb) <= 0.7:
-            rec_model = model_name
+    rec_model = "tiny"
+    for name, size in sorted_models:
+        if usable_gb > 0 and (size / usable_gb) <= 0.7:
+            rec_model = name
             break
 
-    usage_pct = (reqs[rec_model] / usable_gb) * 100 if usable_gb > 0 else 100
+    usage_pct = (
+        (MODEL_REQUIREMENTS[rec_model] / usable_gb * 100) if usable_gb > 0 else 100
+    )
     return rec_model, usable_gb, rule_desc, usage_pct
 
 
@@ -136,12 +156,14 @@ def print_status(
     if status:
         icon = f"{Fore.GREEN}✅{Style.RESET_ALL}"
         print(
-            f" {icon} {Style.BRIGHT}{component:<20}{Style.RESET_ALL} {Fore.GREEN}Found{Style.RESET_ALL} {Style.DIM}({details}){Style.RESET_ALL}"
+            f" {icon} {Style.BRIGHT}{component:<20}{Style.RESET_ALL} "
+            f"{Fore.GREEN}Found{Style.RESET_ALL} {Style.DIM}({details}){Style.RESET_ALL}"
         )
     else:
         icon = f"{Fore.RED}❌{Style.RESET_ALL}"
         print(
-            f" {icon} {Style.BRIGHT}{component:<20}{Style.RESET_ALL} {Fore.RED}MISSING{Style.RESET_ALL}"
+            f" {icon} {Style.BRIGHT}{component:<20}{Style.RESET_ALL} "
+            f"{Fore.RED}MISSING{Style.RESET_ALL}"
         )
         if fix_cmd:
             print(f"    {Fore.YELLOW}➜ Fix: {Style.BRIGHT}{fix_cmd}{Style.RESET_ALL}")
@@ -174,28 +196,7 @@ def check_import(module_name) -> bool:
     Returns:
         bool: True if the module is installed, False otherwise.
     """
-    if importlib.util.find_spec(module_name):
-        return True
-    return False
-
-
-def check_gpu() -> tuple[bool, Optional[str]]:
-    """
-    Detects available hardware acceleration.
-
-    Returns:
-        tuple[bool, Optional[str]]: A tuple containing a boolean indicating
-        whether hardware acceleration is available and a string indicating
-        the type of hardware acceleration if available.
-    """
-    import torch
-
-    if torch.cuda.is_available():
-        return True, f"NVIDIA CUDA ({torch.cuda.get_device_name(0)})"
-    elif torch.backends.mps.is_available():
-        return True, "Apple Silicon - MPS"
-    else:
-        return False, "CPU Only"
+    return importlib.util.find_spec(module_name) is not None
 
 
 def main() -> None:
@@ -223,12 +224,12 @@ def main() -> None:
 
     total_mem, mem_type = get_memory_info()
 
-    # Model Recommendation
     if total_mem:
         rec_model, usable_gb, rule_desc, usage_pct = suggest_model(total_mem, mem_type)
 
         print(
-            f" {Fore.BLUE}💾{Style.RESET_ALL} {Style.BRIGHT}{'Memory Rule':<20}{Style.RESET_ALL} {Fore.BLUE}{rule_desc}{Style.RESET_ALL}"
+            f" {Fore.BLUE}💾{Style.RESET_ALL} {Style.BRIGHT}{'Memory Rule':<20}{Style.RESET_ALL} "
+            f"{Fore.BLUE}{rule_desc}{Style.RESET_ALL}"
         )
         print(
             f"     {Style.DIM}Safe Allowance:      {usable_gb:.1f} GB{Style.RESET_ALL}"
@@ -236,12 +237,13 @@ def main() -> None:
 
         current_model = config.MODEL_SIZE
 
-        # Draw the comparison
         print(f"\n   {Style.BRIGHT}Optimization Analysis:{Style.RESET_ALL}")
 
-        # Recommended Line
+        # Safe headroom calculation
+        headroom = usable_gb - (usable_gb * (usage_pct / 100))
         print(
-            f"   Recommended ({rec_model}): {draw_bar(usage_pct)} {Style.DIM}(Leaves ~{usable_gb - (usable_gb * (usage_pct / 100)):.1f} GB Headroom){Style.RESET_ALL}"
+            f"   Recommended ({rec_model}): {draw_bar(usage_pct)} "
+            f"{Style.DIM}(Leaves ~{headroom:.1f} GB Headroom){Style.RESET_ALL}"
         )
 
         print(f"\n   {Style.BRIGHT}Result:{Style.RESET_ALL}")
@@ -250,16 +252,10 @@ def main() -> None:
         )
         print(f"   Your Config:         {Fore.CYAN}'{current_model}'{Style.RESET_ALL}")
 
-        # Intelligent Suggestions based on comparison
-        req_map = {
-            "tiny": 1,
-            "base": 1,
-            "small": 2,
-            "medium": 5,
-            "turbo": 6,
-            "large": 10,
-        }
-        current_req = req_map.get(current_model, 6)
+        # Intelligent Suggestions
+        # Fallback to 6GB if model not found in dict
+        current_req = MODEL_REQUIREMENTS.get(current_model, 6.0)
+        rec_req = MODEL_REQUIREMENTS.get(rec_model, 1.0)
 
         if current_req > usable_gb:
             print(
@@ -275,19 +271,18 @@ def main() -> None:
         elif current_model == "large" and rec_model == "turbo":
             print(f"\n   {Fore.YELLOW}ADVICE: You are using 'large'.{Style.RESET_ALL}")
             print(
-                f"      While your system can handle it, {Fore.GREEN}'turbo'{Style.RESET_ALL} is 8x faster"
+                f"      {Fore.GREEN}'turbo'{Style.RESET_ALL} is significantly faster and uses less RAM."
             )
-            print("      and uses 4GB less RAM with similar accuracy.")
 
-        elif current_req < req_map.get(rec_model, 6):
+        elif current_req < rec_req:
             print(
                 f"\n   {Fore.BLUE}OPTIMIZATION: Your hardware is under-utilized.{Style.RESET_ALL}"
             )
             print(
-                f"      You are using '{current_model}', but your system can handle {Fore.GREEN}'{rec_model}'{Style.RESET_ALL}."
+                f"      You use '{current_model}', but can handle {Fore.GREEN}'{rec_model}'{Style.RESET_ALL}."
             )
             print(
-                f"      {Fore.YELLOW}➜ Switch to '{rec_model}' in config.py for better transcription accuracy.{Style.RESET_ALL}"
+                f"      {Fore.YELLOW}➜ Switch to '{rec_model}' in config.py for better accuracy.{Style.RESET_ALL}"
             )
 
         elif current_model == rec_model:
@@ -297,12 +292,13 @@ def main() -> None:
 
     else:
         print(
-            f" {Fore.YELLOW}⚠️{Style.RESET_ALL} {Style.BRIGHT}{'Memory Check':<20}{Style.RESET_ALL} {Fore.YELLOW}Skipped{Style.RESET_ALL}"
+            f" {Fore.YELLOW}⚠️{Style.RESET_ALL} {Style.BRIGHT}{'Memory Check':<20}{Style.RESET_ALL} "
+            f"{Fore.YELLOW}Skipped{Style.RESET_ALL} {Style.DIM}(Could not detect memory info){Style.RESET_ALL}"
         )
 
     print("")
 
-    # 2. System Dependencies
+    # 3. System Dependencies
     print(f"{Fore.WHITE}{Style.DIM}--- System Dependencies ---{Style.RESET_ALL}")
     has_ffmpeg, ffmpeg_path = check_command("ffmpeg")
     if has_ffmpeg and ffmpeg_path:
@@ -318,7 +314,7 @@ def main() -> None:
 
     print("")
 
-    # 3. Python Dependencies
+    # 4. Python Dependencies
     print(f"{Fore.WHITE}{Style.DIM}--- Python Libraries ---{Style.RESET_ALL}")
     deps = ["torch", "whisper", "watchdog", "pyperclip", "colorama", "tqdm"]
     for dep in deps:
@@ -330,16 +326,18 @@ def main() -> None:
 
     print("")
 
-    # 4. Configuration Paths
+    # 5. Configuration Paths
     print(f"{Fore.WHITE}{Style.DIM}--- Configuration ---{Style.RESET_ALL}")
     if config.WHATSAPP_INTERNAL_PATH and os.path.exists(config.WHATSAPP_INTERNAL_PATH):
         print(
-            f" {Fore.GREEN}📂{Style.RESET_ALL} {Style.BRIGHT}{'WhatsApp Path':<20}{Style.RESET_ALL} {Fore.GREEN}Detected{Style.RESET_ALL}"
+            f" {Fore.GREEN}📂{Style.RESET_ALL} {Style.BRIGHT}{'WhatsApp Path':<20}{Style.RESET_ALL} "
+            f"{Fore.GREEN}Detected{Style.RESET_ALL}"
         )
         print(f"    {Style.DIM}{config.WHATSAPP_INTERNAL_PATH}{Style.RESET_ALL}")
     else:
         print(
-            f" {Fore.RED}📂{Style.RESET_ALL} {Style.BRIGHT}{'WhatsApp Path':<20}{Style.RESET_ALL} {Fore.RED}NOT FOUND{Style.RESET_ALL}"
+            f" {Fore.RED}📂{Style.RESET_ALL} {Style.BRIGHT}{'WhatsApp Path':<20}{Style.RESET_ALL} "
+            f"{Fore.RED}NOT FOUND{Style.RESET_ALL}"
         )
         print(
             f"    {Fore.YELLOW}➜ Fix: Open config.py and set MANUAL_PATH_OVERRIDE{Style.RESET_ALL}"
