@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+
 import os
 import time
 import datetime
@@ -139,7 +140,6 @@ class TranscriptionWorker(threading.Thread):
         except Exception:
             duration_fmt = "Unknown duration"
 
-        # Updated Print Statement with Timestamp and Duration
         timestamp = datetime.datetime.now().strftime("%H:%M:%S")
         print(
             f"\n{Style.DIM}[{timestamp}]{Style.RESET_ALL} {Fore.CYAN}⚡️ [WORKING]{Style.RESET_ALL} Processing: {Style.BRIGHT}{file_base}{Style.RESET_ALL} {Style.DIM}({duration_fmt}){queue_msg}"

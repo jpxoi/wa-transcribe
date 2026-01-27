@@ -47,7 +47,7 @@ MANUAL_PATH_OVERRIDE: Optional[str] = None
 TRANSCRIPTION_LANGUAGE: Optional[str] = None
 
 
-# --- 4. MEMORY MANAGEMENT ---
+# --- 4. SYSTEM MEMORY MANAGEMENT ---
 # Adjust how aggressively the script uses your system memory.
 # Recommended Values:
 #   - 0.3 (Eco)        : Minimal impact, keeps the system responsive for other apps.
