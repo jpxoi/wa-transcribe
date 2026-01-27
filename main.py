@@ -128,7 +128,14 @@ class TranscriptionWorker(threading.Thread):
         try:
             audio = whisper.load_audio(filename)
             duration_secs = len(audio) / whisper.audio.SAMPLE_RATE
-            duration_fmt = f"{duration_secs:.1f}s"
+
+            m, s = divmod(duration_secs, 60)
+
+            if m > 0:
+                duration_fmt = f"{int(m)}m {int(s)}s"
+            else:
+                duration_fmt = f"{s:.1f}s"
+
         except Exception:
             duration_fmt = "Unknown duration"
 
