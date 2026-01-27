@@ -49,26 +49,30 @@ def get_compute_device() -> str:
 
 def cleanup_unused_models(current_model_name: str) -> None:
     """
-    Deletes unused Whisper models from the cache to save disk space.
-
-    Args:
-        current_model_name (str): The name of the model currently in use (e.g., "medium")
+    Deletes models from the cache ONLY if they haven't been used in 7 days.
     """
     cache_dir: str = os.path.expanduser("~/.cache/whisper")
     if not os.path.exists(cache_dir):
         return
 
     keep_filename: str = f"{current_model_name}.pt"
-    print("🧹 Maintenance: Checking for unused models...")
+    retention_period = 7 * 24 * 60 * 60  # 7 days in seconds
+    current_time = time.time()
+
+    print("🧹 Maintenance: Checking for old, unused models...")
 
     for filename in os.listdir(cache_dir):
         if filename in config.KNOWN_MODELS and filename != keep_filename:
+            file_path = os.path.join(cache_dir, filename)
             try:
-                file_path: str = os.path.join(cache_dir, filename)
-                os.remove(file_path)
-                print(f"   🗑️ Deleted unused model: {filename}")
+                last_access = os.stat(file_path).st_atime
+
+                if (current_time - last_access) > retention_period:
+                    os.remove(file_path)
+                    print(f"   🗑️ Deleted old model (unused for >7 days): {filename}")
+                else:
+                    pass
             except OSError:
-                # Silently fail on permission errors to avoid spamming user
                 pass
 
 
@@ -122,15 +126,21 @@ class TranscriptionWorker(threading.Thread):
         """
         print(f"\n⚡️ Processing: {os.path.basename(filename)}")
 
-        # Robust file readiness check
-        # Waits until file size is stable (file write is complete)
         if not self.wait_for_file_ready(filename):
             print(f"⚠️ Timeout waiting for file: {filename}")
             return
 
         try:
-            # FIX: fp16=False is crucial for M-series chips to avoid NaN errors
-            result: dict = self.model.transcribe(filename, fp16=False)
+            # Smart FP16 selection:
+            # CUDA (NVIDIA) benefits from FP16.
+            # MPS (Mac) and CPU usually require FP32 (fp16=False) to avoid issues.
+            use_fp16 = False
+            if hasattr(self.model, "device"):
+                if self.model.device.type == "cuda":
+                    use_fp16 = True
+
+            # Transcribe
+            result: dict = self.model.transcribe(filename, fp16=use_fp16)
             text: str = result["text"].strip()
 
             print(f"✅ Transcript: {text}")

@@ -66,6 +66,14 @@ source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
+### 4. Run Health Check (Recommended)
+
+Before starting, ensure your system has FFmpeg and the correct drivers installed:
+
+```bash
+python check_health.py
+```
+
 ## ⚙️ Configuration
 
 The project is ready to run out of the box, but you can customize settings in `config.py`.
