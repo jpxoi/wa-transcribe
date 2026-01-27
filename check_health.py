@@ -16,7 +16,7 @@ def print_banner():
     subprocess.run("cls" if os.name == "nt" else "clear", shell=True)
 
     print(
-        f"{Fore.GREEN}●{Style.RESET_ALL} {Style.BRIGHT}WhatsApp Auto-Transcriber{Style.RESET_ALL} {Style.DIM}v{config.VERSION}{Style.RESET_ALL}"
+        f"{Fore.GREEN}●{Style.RESET_ALL} {Style.BRIGHT}{config.APP_NAME}{Style.RESET_ALL} {Style.DIM}v{config.APP_VERSION}{Style.RESET_ALL}"
     )
     print(f"{Style.DIM}  System Health Check Tool{Style.RESET_ALL}")
     print(f"{Style.DIM}" + "─" * 50 + f"{Style.RESET_ALL}")

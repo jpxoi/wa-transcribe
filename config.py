@@ -40,6 +40,12 @@ MODEL_SIZE: str = "turbo"
 # Leave as None to use auto-detection.
 MANUAL_PATH_OVERRIDE: Optional[str] = None
 
+# --- 3. LANGUAGE SETTINGS ---
+# None = Auto-detect (Good for multilingual users)
+# "en" = English, "es" = Spanish, "fr" = French, etc.
+# forcing a language improves accuracy for short voice notes.
+TRANSCRIPTION_LANGUAGE: Optional[str] = None
+
 
 # ==============================================================================
 #   ⛔️ SYSTEM CONFIGURATION (DO NOT EDIT BELOW THIS LINE)
@@ -103,6 +109,7 @@ KNOWN_MODELS: List[str] = [
     "medium.en.pt",
 ]
 
-VERSION: str = "1.0"
+APP_NAME: str = "WhatsApp Auto-Transcriber"
+APP_VERSION: str = "1.0"
 DEVELOPER_NAME: str = "Jean Paul Fernandez"
 DEVELOPER_USERNAME: str = "jpxoi"

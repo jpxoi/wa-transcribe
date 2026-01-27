@@ -13,7 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-
+import sys
 import os
 import subprocess
 import time
@@ -112,8 +112,14 @@ def save_to_log(text: str, source_file: str) -> None:
 def print_banner():
     subprocess.run("cls" if os.name == "nt" else "clear", shell=True)
 
+    if os.name == "nt":  # Windows
+        subprocess.run("title WhatsApp Auto-Transcriber", shell=True)
+    else:  # macOS / Linux
+        sys.stdout.write("\x1b]2;WhatsApp Auto-Transcriber\x07")
+
+    # 3. Print ASCII Art
     print(
-        f"{Fore.GREEN}●{Style.RESET_ALL} {Style.BRIGHT}WhatsApp Auto-Transcriber{Style.RESET_ALL} {Style.DIM}v{config.VERSION}{Style.RESET_ALL}"
+        f"{Fore.GREEN}●{Style.RESET_ALL} {Style.BRIGHT}{config.APP_NAME}{Style.RESET_ALL} {Style.DIM}v{config.APP_VERSION}{Style.RESET_ALL}"
     )
     print(
         f"{Style.DIM}  © 2026 {config.DEVELOPER_NAME} (@{config.DEVELOPER_USERNAME}){Style.RESET_ALL}"
@@ -180,7 +186,9 @@ class TranscriptionWorker(threading.Thread):
                 use_fp16 = True
 
             # Transcribe
-            result: dict = self.model.transcribe(filename, fp16=use_fp16)
+            result: dict = self.model.transcribe(
+                filename, fp16=use_fp16, language=config.TRANSCRIPTION_LANGUAGE
+            )
             text: str = result["text"].strip()
 
             elapsed = time.time() - start_time
