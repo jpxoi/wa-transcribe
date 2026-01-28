@@ -22,7 +22,7 @@ import pyperclip
 import queue
 import threading
 from typing import Any
-from app import db, config
+from app import db, config, utils
 from colorama import init, Fore, Style
 
 init(autoreset=True)
@@ -95,12 +95,7 @@ class TranscriptionWorker(threading.Thread):
             audio = whisper.load_audio(filename)
             duration_secs = len(audio) / whisper.audio.SAMPLE_RATE
 
-            m, s = divmod(duration_secs, 60)
-
-            if m > 0:
-                duration_fmt = f"{int(m)}m {int(s)}s"
-            else:
-                duration_fmt = f"{s:.1f}s"
+            duration_fmt = utils.format_duration(duration_secs)
 
         except Exception:
             duration_fmt = "Unknown duration"

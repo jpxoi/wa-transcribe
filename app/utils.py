@@ -25,6 +25,32 @@ from pathlib import Path
 from collections import deque
 from colorama import Fore, Style
 from typing import Optional, Literal, cast
+import math
+
+
+def format_duration(seconds: float) -> str:
+    """
+    Formats a duration in seconds into a human-readable string.
+    e.g. 75.5 -> "1m 15s", 4.2 -> "4.2s"
+
+    Args:
+        seconds (float): Duration in seconds.
+
+    Returns:
+        str: Formatted duration string.
+    """
+    try:
+        if math.isnan(seconds) or math.isinf(seconds) or seconds < 0:
+            return "Unknown duration"
+
+        m, s = divmod(seconds, 60)
+
+        if m > 0:
+            return f"{int(m)}m {int(s)}s"
+        else:
+            return f"{s:.1f}s"
+    except Exception:
+        return "Unknown duration"
 
 
 def clear_screen():

@@ -274,6 +274,19 @@ wheels = [
 ]
 
 [[package]]
+name = "hypothesis"
+version = "6.151.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "exceptiongroup", marker = "python_full_version < '3.11'" },
+    { name = "sortedcontainers" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/e9/aa/0e1aff2de954a1b11acf643519599c3da97d461cf62e312cab266aa9f855/hypothesis-6.151.3.tar.gz", hash = "sha256:31bcd884b0be8f478aa2e52f0f73be03e8f6a9a2c66706fb93410ebaa5c27bcc", size = 475822, upload-time = "2026-01-28T05:37:32.494Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b4/9a/e39da18745c889c7959e0ef4b53b71522062cc94714f99ac9d5b86cb222e/hypothesis-6.151.3-py3-none-any.whl", hash = "sha256:879a4b3dec37678fd1bd3a060aaaf3eedc2aab5543d9a85e5f2a04a6445683c6", size = 543275, upload-time = "2026-01-28T05:37:30.312Z" },
+]
+
+[[package]]
 name = "idna"
 version = "3.11"
 source = { registry = "https://pypi.org/simple" }
@@ -1042,6 +1055,15 @@ wheels = [
 ]
 
 [[package]]
+name = "sortedcontainers"
+version = "2.4.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/e8/c4/ba2f8066cceb6f23394729afe52f3bf7adec04bf9ed2c820b39e19299111/sortedcontainers-2.4.0.tar.gz", hash = "sha256:25caa5a06cc30b6b83d11423433f65d1f9d76c4c6a0c90e3379eaa43b9bfdb88", size = 30594, upload-time = "2021-05-16T22:03:42.897Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/32/46/9cb0e58b2deb7f82b84065f37f3bffeb12413f947f9388e4cac22c4621ce/sortedcontainers-2.4.0-py2.py3-none-any.whl", hash = "sha256:a163dcaede0f1c021485e957a39245190e74249897e2ae4b2aa38595db237ee0", size = 29575, upload-time = "2021-05-16T22:03:41.177Z" },
+]
+
+[[package]]
 name = "sympy"
 version = "1.14.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1290,6 +1312,7 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "hypothesis" },
     { name = "pytest" },
     { name = "pytest-cov" },
     { name = "pytest-mock" },
@@ -1309,6 +1332,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "hypothesis", specifier = ">=6.151.3" },
     { name = "pytest", specifier = ">=9.0.2" },
     { name = "pytest-cov", specifier = ">=7.0.0" },
     { name = "pytest-mock", specifier = ">=3.15.1" },
