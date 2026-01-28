@@ -47,8 +47,17 @@ testpaths = ["tests"]
 python_files = ["test_*.py"]
 addopts = "-v"
 
+[tool.uv.sources]
+wa-transcriber = { workspace = true }
+
+[tool.uv.workspace]
+members = [
+    ".",
+]
+
 [dependency-groups]
 dev = [
     "pytest>=9.0.2",
     "pytest-mock>=3.15.1",
+    "wa-transcriber",
 ]

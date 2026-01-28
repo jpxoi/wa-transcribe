@@ -17,14 +17,12 @@
 import sqlite3
 import os
 import datetime
-import logging
 import re
 import app.config as config
 from typing import Set, Generator
 from contextlib import contextmanager
 from colorama import Fore, Style
 
-logger = logging.getLogger(__name__)
 
 DB_PATH = os.path.join(config.BASE_DIR, config.DB_FILENAME)
 
@@ -73,11 +71,13 @@ def init_db() -> None:
             try:
                 os.chmod(DB_PATH, 0o600)
             except OSError as e:
-                logger.warning(f"Could not set secure permissions on DB: {e}")
+                print(
+                    f"{Fore.YELLOW}Could not set secure permissions on DB: {e}{Style.RESET_ALL}"
+                )
 
     except sqlite3.Error as e:
-        logger.error(
-            f"{Fore.RED}[DB Error] Failed to initialize database: {e}{Style.RESET_ALL}"
+        print(
+            f"{Fore.RED}✗ [DB ERROR] Failed to initialize database: {e}{Style.RESET_ALL}"
         )
         raise
 
@@ -91,8 +91,8 @@ def is_file_processed(filename: str) -> bool:
             )
             return cursor.fetchone() is not None
     except sqlite3.Error as e:
-        logger.error(
-            f"{Fore.RED}[DB Error] Failed to check file {filename}: {e}{Style.RESET_ALL}"
+        print(
+            f"{Fore.RED}✗ [DB ERROR] Failed to check file {filename}: {e}{Style.RESET_ALL}"
         )
         return False
 
@@ -111,8 +111,8 @@ def add_processed_file(filename: str, filepath: str) -> None:
             )
             conn.commit()
     except sqlite3.Error as e:
-        logger.error(
-            f"{Fore.RED}[DB Error] Failed to mark file as processed {filename}: {e}{Style.RESET_ALL}"
+        print(
+            f"{Fore.RED}✗ [DB Error] Failed to mark file as processed {filename}: {e}{Style.RESET_ALL}"
         )
 
 
@@ -126,8 +126,8 @@ def get_all_processed_filenames() -> Set[str]:
             cursor = conn.execute("SELECT filename FROM processed_files")
             return {row[0] for row in cursor.fetchall()}
     except sqlite3.Error as e:
-        logger.error(
-            f"{Fore.RED}[DB Error] Failed to fetch processed filenames: {e}{Style.RESET_ALL}"
+        print(
+            f"{Fore.RED}✗ [DB Error] Failed to fetch processed filenames: {e}{Style.RESET_ALL}"
         )
         return set()
 
@@ -178,7 +178,9 @@ def migrate_from_logs() -> None:
                                     )
                                     processed_count += 1
                 except (IOError, OSError) as e:
-                    logger.warning(f"Could not read log file {filename}: {e}")
+                    print(
+                        f"{Fore.YELLOW}Could not read log file {filename}: {e}{Style.RESET_ALL}"
+                    )
 
             conn.commit()
 
@@ -188,4 +190,4 @@ def migrate_from_logs() -> None:
                 )
 
     except sqlite3.Error as e:
-        logger.error(f"{Fore.RED}[DB Error] Migration failed: {e}{Style.RESET_ALL}")
+        print(f"{Fore.RED}✗ [DB ERROR] Migration failed: {e}{Style.RESET_ALL}")
