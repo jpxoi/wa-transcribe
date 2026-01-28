@@ -6,4 +6,3 @@ colorama
 tqdm
 pytest
 pytest-mock
-pytest-cov
