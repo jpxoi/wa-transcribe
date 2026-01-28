@@ -19,13 +19,11 @@ import time
 import datetime
 import whisper
 import pyperclip
-import argparse
 import queue
 import threading
 import app.db as db
 import app.config as config
 import app.utils as utils
-import app.health as health
 from typing import Optional, Any
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler, FileSystemEvent
@@ -80,10 +78,10 @@ def save_to_log(text: str, source_file: str, duration: str, elapsed: float) -> N
         text (str): The transcribed text content.
         source_file (str): The full path to the original audio file.
     """
-    os.makedirs(config.LOG_FOLDER_PATH, exist_ok=True)
+    os.makedirs(config.TRANSCRIBED_AUDIO_LOGS_DIR, exist_ok=True)
 
     date_str = datetime.datetime.now().strftime("%Y-%m-%d")
-    log_file = os.path.join(config.LOG_FOLDER_PATH, f"{date_str}_daily.log")
+    log_file = os.path.join(config.TRANSCRIBED_AUDIO_LOGS_DIR, f"{date_str}_daily.log")
 
     timestamp = datetime.datetime.now().strftime("%H:%M:%S")
     filename = os.path.basename(source_file)
@@ -240,7 +238,7 @@ class TranscriptionWorker(threading.Thread):
                 pyperclip.copy(text)
                 print(f"{Fore.BLUE}   📋 Copied to clipboard")
             except Exception:
-                print(f"{Fore.YELLOW}   ! Clipboard unavailable")
+                print(f"{Fore.YELLOW}   ⚠ Clipboard unavailable")
 
             save_to_log(text, filename, duration_fmt, elapsed)
             db.add_processed_file(file_base, filename)
@@ -322,7 +320,7 @@ def run_transcriber() -> None:
         print(
             f"{Fore.RED}✗ [ERROR] Could not find WhatsApp Media folder.{Style.RESET_ALL}"
         )
-        print(f"   OS Detected: {config.CURRENT_OS}")
+        print(f"   OS Detected: {config.SYSTEM}")
         print("   Please open 'app/config.py' and manually set WHATSAPP_INTERNAL_PATH.")
         return
 
@@ -364,8 +362,14 @@ def run_transcriber() -> None:
     observer = Observer()
     observer.schedule(event_handler, path=config.WHATSAPP_INTERNAL_PATH, recursive=True)
 
+    print(
+        f"\n{Fore.CYAN}📂 Logs saved to:{Style.RESET_ALL} {Style.DIM}{os.path.abspath(config.TRANSCRIBED_AUDIO_LOGS_DIR)}{Style.RESET_ALL}"
+    )
+
     print(f"\n{Fore.CYAN}👀 Watching Folder:{Style.RESET_ALL}")
-    print(f"   {config.WHATSAPP_INTERNAL_PATH}")
+    print(
+        f"   {Style.DIM}{os.path.abspath(config.WHATSAPP_INTERNAL_PATH)}{Style.RESET_ALL}"
+    )
     print("─" * 50)
     print("   Press Ctrl+C to stop the script.")
 
@@ -379,24 +383,8 @@ def run_transcriber() -> None:
     observer.join()
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Automatically transcribe WhatsApp voice notes to your clipboard using OpenAI Whisper.",
+def show_logs() -> None:
+    """Show logs."""
+    print(
+        f"\n{Fore.CYAN}📂 Logs saved to:{Style.RESET_ALL} {Style.DIM}{os.path.abspath(config.TRANSCRIBED_AUDIO_LOGS_DIR)}{Style.RESET_ALL}"
     )
-    parser.add_argument(
-        "--health",
-        action="store_true",
-        help="Run system diagnostics to verify dependencies and folder access.",
-    )
-
-    args = parser.parse_args()
-
-    if args.health:
-        health.run_diagnostics()
-        return
-
-    run_transcriber()
-
-
-if __name__ == "__main__":
-    main()

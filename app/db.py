@@ -24,16 +24,13 @@ from contextlib import contextmanager
 from colorama import Fore, Style
 
 
-DB_PATH = os.path.join(config.BASE_DIR, config.DB_FILENAME)
-
-
 @contextmanager
 def get_db_connection() -> Generator[sqlite3.Connection, None, None]:
     """
     Context manager for database connections.
     Ensures connections are closed and rows are accessible by name.
     """
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(config.DB_PATH)
     # Enable accessing columns by name: row['filename']
     conn.row_factory = sqlite3.Row
     try:
@@ -46,7 +43,7 @@ def init_db() -> None:
     """Initializes the database table and enables WAL mode for concurrency."""
     try:
         # Create directory if it doesn't exist
-        os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+        os.makedirs(os.path.dirname(config.DB_PATH), exist_ok=True)
 
         with get_db_connection() as conn:
             # Enable Write-Ahead Logging (WAL) for better concurrency
@@ -67,9 +64,9 @@ def init_db() -> None:
             conn.commit()
 
         # We wrap this in try/except to prevent crashes in tests or restricted envs
-        if os.name == "posix" and os.path.exists(DB_PATH):
+        if os.name == "posix" and os.path.exists(config.DB_PATH):
             try:
-                os.chmod(DB_PATH, 0o600)
+                os.chmod(config.DB_PATH, 0o600)
             except OSError as e:
                 print(
                     f"{Fore.YELLOW}Could not set secure permissions on DB: {e}{Style.RESET_ALL}"
@@ -134,7 +131,7 @@ def get_all_processed_filenames() -> Set[str]:
 
 def migrate_from_logs() -> None:
     """Scans existing log files and populates the database."""
-    if not os.path.exists(config.LOG_FOLDER_PATH):
+    if not os.path.exists(config.TRANSCRIBED_AUDIO_LOGS_DIR):
         return
 
     try:
@@ -144,7 +141,7 @@ def migrate_from_logs() -> None:
                 return
 
             print(
-                f"{Fore.CYAN}📦 Migrating history from logs to database...{Style.RESET_ALL}"
+                f"{Fore.CYAN}📦 Migration:{Style.RESET_ALL} Restoring history from logs..."
             )
 
             processed_count = 0
@@ -154,11 +151,11 @@ def migrate_from_logs() -> None:
 
             conn.execute("BEGIN TRANSACTION;")  # Explicit transaction for speed
 
-            for filename in os.listdir(config.LOG_FOLDER_PATH):
+            for filename in os.listdir(config.TRANSCRIBED_AUDIO_LOGS_DIR):
                 if not filename.endswith("_daily.log"):
                     continue
 
-                log_path = os.path.join(config.LOG_FOLDER_PATH, filename)
+                log_path = os.path.join(config.TRANSCRIBED_AUDIO_LOGS_DIR, filename)
                 try:
                     with open(log_path, "r", encoding="utf-8") as f:
                         for line in f:

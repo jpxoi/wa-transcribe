@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "wa-transcriber"
-version = "1.0.0"
+version = "1.1.0"
 description = "Automated local WhatsApp voice note transcriber"
 readme = "README.md"
 authors = [{ name = "Jean Paul Fernandez", email = "hello@jpxoi.com" }]
@@ -29,6 +29,7 @@ dependencies = [
     "torch",
     "colorama",
     "tqdm",
+    "questionary>=2.1.1",
 ]
 
 [project.urls]
@@ -36,7 +37,7 @@ Homepage = "https://github.com/jpxoi/wa-transcriber"
 Issues = "https://github.com/jpxoi/wa-transcriber/issues"
 
 [project.scripts]
-wa-transcriber = "app.core:main"
+wa-transcriber = "app.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["."]

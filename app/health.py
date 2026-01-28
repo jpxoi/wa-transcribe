@@ -220,7 +220,7 @@ def run_diagnostics() -> None:
 
     else:
         print(
-            f" {Fore.YELLOW}!{Style.RESET_ALL} {Style.BRIGHT}{'Memory Check':<20}{Style.RESET_ALL} "
+            f" {Fore.YELLOW}⚠{Style.RESET_ALL} {Style.BRIGHT}{'Memory Check':<20}{Style.RESET_ALL} "
             f"{Fore.YELLOW}Skipped{Style.RESET_ALL} {Style.DIM}(Could not detect memory info){Style.RESET_ALL}"
         )
 

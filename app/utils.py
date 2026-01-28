@@ -13,15 +13,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-
 import os
 import sys
 import shutil
+import torch
 import platform
 import subprocess
 import importlib.util
-import torch
-from typing import Optional, Literal
+from collections import deque
+from typing import Optional, Literal, cast
+from pathlib import Path
 from colorama import Fore, Style
 import app.config as config
 
@@ -154,3 +155,56 @@ def get_memory_info() -> tuple[
 
     except Exception:
         return None, None
+
+
+def show_logs(
+    type: Literal["app", "transcribed_audio"], lines_to_show: int = 50
+) -> None:
+    """
+    Finds the most recent log file and prints the last N lines.
+    """
+    print_banner("Recent Logs")
+
+    if type == "app":
+        log_dir = config.APP_LOGS_DIR
+    elif type == "transcribed_audio":
+        log_dir = config.TRANSCRIBED_AUDIO_LOGS_DIR
+    else:
+        raise ValueError(f"Invalid log type: {type}")
+
+    # 1. Find all log files matching the pattern
+    list_of_files: list[Path] = list(log_dir.glob("*_daily.log"))
+
+    if not list_of_files:
+        print(f"{Fore.YELLOW}⚠ No log files found in:{Style.RESET_ALL}")
+        print(f"  {log_dir}")
+        return
+
+    # 2. Get the latest file (Sort by modification time)
+    latest_file = cast(Path, max(list_of_files, key=os.path.getmtime))
+    filename = latest_file.name
+
+    print(
+        f"{Style.DIM}Reading latest log file: {Fore.CYAN}{filename}{Style.RESET_ALL}\n"
+    )
+
+    # 3. Read only the last N lines efficiently
+    try:
+        with open(latest_file, "r", encoding="utf-8", errors="replace") as f:
+            last_lines = deque(f, maxlen=lines_to_show)
+
+            if not last_lines:
+                print(f"{Style.DIM}(Log file is empty){Style.RESET_ALL}")
+
+            for line in last_lines:
+                # Add a subtle border for readability
+                print(f"{Style.DIM}│{Style.RESET_ALL} {line.strip()}")
+
+    except Exception as e:
+        print(f"{Fore.RED}Error reading log file: {e}{Style.RESET_ALL}")
+
+    # 4. Footer
+    print(f"\n{Style.DIM}" + "─" * 50 + f"{Style.RESET_ALL}")
+    print(
+        f"{Fore.GREEN}➜ Full logs location:{Style.RESET_ALL} {Style.BRIGHT}{config.TRANSCRIBED_AUDIO_LOGS_DIR}{Style.RESET_ALL}"
+    )
