@@ -37,7 +37,7 @@ Whisper relies on FFmpeg for audio processing.
 
 ### 2. Python 3.10+
 
-Ensure you have a modern Python version installed. Pr
+Ensure you have a modern Python version installed. You can download it from [python.org](https://www.python.org/downloads/).
 
 ## 🛠️ Installation
 
