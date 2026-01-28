@@ -69,20 +69,20 @@ pip install -r requirements.txt
 Before running the main program, run the included health check tool. This script analyzes your **System RAM** (CPU/MPS) or **VRAM** (NVIDIA) and calculates exactly which Whisper model your computer can handle safely.
 
 ```bash
-python check_health.py
+python main.py --health-check
 ```
 
 * ✅ Verifies FFmpeg installation.
 * ✅ Detects Hardware Acceleration (CUDA vs MPS vs CPU).
 * ✅ Calculates memory overhead and suggests the best `MODEL_SIZE`.
 
-## ⚙️ Configuration (`config.py`)
+## ⚙️ Configuration (`app/config.py`)
 
-Open `config.py` to adjust settings.
+Open `app/config.py` to adjust settings.
 
 ### Model Selection
 
-Based on the output of `check_health.py`, set your `MODEL_SIZE`:
+Based on the output of `python main.py --health-check`, set your `MODEL_SIZE`:
 
 | Model | VRAM/RAM Req | Speed | Accuracy | Best For |
 | --- | --- | --- | --- | --- |
@@ -97,7 +97,7 @@ Based on the output of `check_health.py`, set your `MODEL_SIZE`:
 
 The script attempts to auto-detect paths on macOS.
 
-* **Windows Users:** You likely need to set `MANUAL_PATH_OVERRIDE` in `config.py` to point to your WhatsApp Media folder (usually inside `AppData\Local\Packages`).
+* **Windows Users:** You likely need to set `MANUAL_PATH_OVERRIDE` in `app/config.py` to point to your WhatsApp Media folder (usually inside `AppData\Local\Packages`).
 
 ### Advanced Settings
 
@@ -129,7 +129,7 @@ python main.py
 ## ❓ Troubleshooting
 
 * **"Clipboard unavailable":** On Linux, you may need `xclip` or `xsel`. On Windows/Mac, this usually works out of the box.
-* **"CUDA out of memory":** Run `python check_health.py` and switch to a smaller model (e.g., from `large` to `medium`).
+* **"CUDA out of memory":** Run `python main.py --health-check` and switch to a smaller model (e.g., from `large` to `medium`).
 * **Script doesn't trigger:** Ensure "Media Auto-Download" is ON in WhatsApp settings, or manually click the download arrow on the voice note.
 
 ## 🤝 Contributing

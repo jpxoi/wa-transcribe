@@ -19,10 +19,12 @@ import time
 import datetime
 import whisper
 import pyperclip
-import config
-import utils
+import argparse
 import queue
 import threading
+import app.config as config
+import app.utils as utils
+import app.health as health
 from typing import Optional, Any
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler, FileSystemEvent
@@ -342,7 +344,7 @@ def run_transcriber() -> None:
             f"{Fore.RED}✗ [ERROR] Could not find WhatsApp Media folder.{Style.RESET_ALL}"
         )
         print(f"   OS Detected: {config.CURRENT_OS}")
-        print("   Please open 'config.py' and manually set WHATSAPP_INTERNAL_PATH.")
+        print("   Please open 'app/config.py' and manually set WHATSAPP_INTERNAL_PATH.")
         return
 
     # 2. Cleanup old models (if enabled)
@@ -396,3 +398,31 @@ def run_transcriber() -> None:
         observer.stop()
         print(f"\n{Fore.RED}● Stopping Transcriber.{Style.RESET_ALL}")
     observer.join()
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Automatically transcribe WhatsApp voice notes to your clipboard using OpenAI Whisper.",
+    )
+    parser.add_argument(
+        "--health-check",
+        action="store_true",
+        help="Run system diagnostics to verify dependencies and folder access.",
+    )
+    parser.add_argument(
+        "--set-model",
+        type=str,
+        default="base",
+        help="Set the model to use for transcription.",
+    )
+
+    args = parser.parse_args()
+
+    if args.health_check:
+        health.run_diagnostics()
+    else:
+        run_transcriber()
+
+
+if __name__ == "__main__":
+    main()

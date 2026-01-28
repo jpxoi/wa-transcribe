@@ -23,7 +23,7 @@ import importlib.util
 import torch
 from typing import Optional, Literal
 from colorama import Fore, Style
-import config
+import app.config as config
 
 
 def clear_screen():

@@ -30,7 +30,7 @@ This project is open to everyone. Please be respectful, empathetic, and patient.
 
 Before creating a bug report, please check the following:
 
-1. **Run the Health Check:** Run `python check_health.py` and see if it flags any missing dependencies or hardware issues.
+1. **Run the Health Check:** Run `python main.py --health-check` and see if it flags any missing dependencies or hardware issues.
 2. **Search Issues:** Check if the issue has already been reported.
 
 If you are opening a new issue, please include:
@@ -77,10 +77,13 @@ pip install -r requirements.txt
 
 ### Project Structure
 
-* `main.py`: The entry point. Handles the `Watchdog` observer and initializes the `TranscriptionWorker` thread.
-* `config.py`: Stores constants, paths, and model settings. **Do not commit personal paths.**
-* `helpers.py`: Utility functions for UI (banners), device detection, and cross-platform clearing.
-* `check_health.py`: Diagnostic tool for memory and dependency analysis.
+The project is structured as follows:
+
+* `app/`: Contains the main application code.
+* `app/config.py`: Stores constants, paths, and model settings. **Do not commit personal paths.**
+* `app/helpers.py`: Utility functions for UI (banners), device detection, and cross-platform clearing.
+* `app/core.py`: The entry point. Handles the `Watchdog` observer and initializes the `TranscriptionWorker` thread.
+* `app/health.py`: Diagnostic tool for memory and dependency analysis.
 
 ## 📏 Coding Standards
 
@@ -126,7 +129,7 @@ git checkout -b feature/amazing-new-feature
 1. Make your changes.
 2. **Test your changes:**
 
-* Run `check_health.py` to ensure logic holds up.
+* Run `python main.py --health-check` to ensure logic holds up.
 * Simulate a file drop to ensure the watcher triggers.
 
 1. Commit your changes with a clear message:
@@ -136,8 +139,8 @@ git checkout -b feature/amazing-new-feature
 
 1. Push to your fork and open a Pull Request.
 
-### A Note on `config.py`
+### A Note on `app/config.py`
 
-If you modified `config.py` for your local machine (e.g., changing the path), **please do not include those changes in your PR** unless they are structural changes to how configuration is handled.
+If you modified `app/config.py` for your local machine (e.g., changing the path), **please do not include those changes in your PR** unless they are structural changes to how configuration is handled.
 
 **Happy Coding!** 🎧✨
