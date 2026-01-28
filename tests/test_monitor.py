@@ -48,3 +48,17 @@ def test_internal_audio_handler_ignore_non_audio(mocker):
     handler.on_created(event)
 
     assert q.qsize() == 0
+
+
+def test_internal_audio_handler_ignore_directories(mocker):
+    """Test InternalAudioHandler ignores directories."""
+    q = queue.Queue()
+    handler = monitor.InternalAudioHandler(q)
+
+    event = mocker.MagicMock()
+    event.is_directory = True
+    event.src_path = "/path/directory"
+
+    handler.on_created(event)
+
+    assert q.qsize() == 0

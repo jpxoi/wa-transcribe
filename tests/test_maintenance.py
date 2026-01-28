@@ -52,3 +52,26 @@ def test_cleanup_unused_models_deletes_old(mocker):
     # 'old.pt' is old, so it is removed
     mock_remove.assert_called_with("/cache/old.pt")
     assert mock_remove.call_count == 1
+
+
+def test_cleanup_unused_models_os_stat_error(mocker):
+    """Test cleanup_unused_models handles os.stat exceptions gracefully."""
+    mock_files = ["turbo.pt", "old.pt"]
+    mocker.patch("os.path.expanduser", return_value="/cache")
+    mocker.patch("os.path.exists", return_value=True)
+    mocker.patch("os.listdir", return_value=mock_files)
+    mocker.patch("os.path.join", side_effect=lambda a, b: f"{a}/{b}")
+    mock_remove = mocker.patch("os.remove")
+    mocker.patch("app.config.KNOWN_MODELS", ["turbo.pt", "old.pt"])
+
+    # Force os.stat to raise an exception
+    mocker.patch(
+        "os.stat",
+        side_effect=OSError("Permission denied"),
+    )
+
+    maintenance.cleanup_unused_models("turbo")
+
+    # 'turbo.pt' is the current model, so it is skipped
+    # 'old.pt' is old, but os.stat failed, so it is skipped
+    mock_remove.assert_not_called()

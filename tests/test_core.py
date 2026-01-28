@@ -1,7 +1,6 @@
-import pytest  # noqa: F401
 import queue
 import time
-import app.core as core
+from app import core
 
 
 def test_queue_recent_files(mocker):
@@ -43,3 +42,126 @@ def test_queue_recent_files(mocker):
 
     assert q.qsize() == 1
     assert q.get() == "/whatsapp/recent.mp3"
+
+
+def test_queue_recent_files_disabled(mocker):
+    q = queue.Queue()
+    mocker.patch("app.config.SCAN_LOOKBACK_ENABLED", False)
+    core.queue_recent_files(q)
+    assert q.empty()
+
+
+def test_queue_recent_files_no_dir(mocker):
+    q = queue.Queue()
+    mocker.patch("app.config.SCAN_LOOKBACK_ENABLED", True)
+    mocker.patch("app.config.WHATSAPP_INTERNAL_PATH", None)
+
+    core.queue_recent_files(q)
+    assert q.empty()
+
+
+def test_queue_recent_files_found(mocker):
+    q = queue.Queue()
+    mock_files = [("root", [], ["file1.opus", "file2.txt", "file3.opus"])]
+
+    mocker.patch("app.config.SCAN_LOOKBACK_ENABLED", True)
+    mocker.patch("app.config.WHATSAPP_INTERNAL_PATH", "/mock/path")
+    mocker.patch("os.path.exists", return_value=True)
+    mocker.patch("os.walk", return_value=mock_files)
+    mocker.patch("os.path.getmtime", side_effect=[time.time(), time.time()])
+    mocker.patch("app.db.is_file_processed", return_value=False)
+
+    core.queue_recent_files(q)
+
+    # file1.opus and file3.opus should be queued
+    # file2.txt ignored
+    assert q.qsize() == 2
+
+
+def test_queue_recent_files_already_processed(mocker):
+    q = queue.Queue()
+    mock_files = [("root", [], ["file1.opus"])]
+
+    mocker.patch("app.config.SCAN_LOOKBACK_ENABLED", True)
+    mocker.patch("app.config.WHATSAPP_INTERNAL_PATH", "/mock/path")
+    mocker.patch("os.path.exists", return_value=True)
+    mocker.patch("os.walk", return_value=mock_files)
+    mocker.patch("os.path.getmtime", return_value=time.time())
+    mocker.patch("app.db.is_file_processed", return_value=True)
+
+    core.queue_recent_files(q)
+    assert q.empty()
+
+
+def test_run_transcriber_no_whatsapp_path(mocker, capsys):
+    mocker.patch("app.core.utils.print_banner")
+    mocker.patch("app.core.db.init_db")
+    mocker.patch("app.core.db.migrate_from_logs")
+
+    # Invalid WhatsApp path
+    mocker.patch("app.config.WHATSAPP_INTERNAL_PATH", None)
+
+    core.run_transcriber()
+
+    captured = capsys.readouterr()
+    assert "Could not find WhatsApp Media folder" in captured.out
+
+
+def test_run_transcriber_model_cleanup_called(mocker):
+    mocker.patch("app.core.utils.print_banner")
+    mocker.patch("app.core.db.init_db")
+    mocker.patch("app.core.db.migrate_from_logs")
+
+    # Valid path so we get past guard
+    mocker.patch("app.config.WHATSAPP_INTERNAL_PATH", "/mock/path")
+    mocker.patch("os.path.exists", return_value=True)
+
+    mocker.patch("app.config.MODEL_CLEANUP_ENABLED", True)
+    cleanup = mocker.patch("app.core.maintenance.cleanup_unused_models")
+
+    # Stop execution before infinite loop
+    mocker.patch("app.core.whisper.load_model", side_effect=RuntimeError("stop"))
+    mocker.patch("app.core.utils.get_compute_device", return_value="cpu")
+
+    try:
+        core.run_transcriber()
+    except RuntimeError:
+        pass
+
+    cleanup.assert_called_once()
+
+
+def test_run_transcriber_model_load_fallback(mocker):
+    mocker.patch("app.core.utils.print_banner")
+    mocker.patch("app.core.db.init_db")
+    mocker.patch("app.core.db.migrate_from_logs")
+
+    # Valid WhatsApp path
+    mocker.patch("app.config.WHATSAPP_INTERNAL_PATH", "/mock/path")
+    mocker.patch("os.path.exists", return_value=True)
+
+    # Device detection
+    mocker.patch("app.core.utils.get_compute_device", return_value="cuda")
+
+    # Whisper model loading: fail on CUDA, succeed on CPU
+    load_model = mocker.patch("app.core.whisper.load_model")
+    load_model.side_effect = [
+        RuntimeError("CUDA failed"),
+        mocker.MagicMock(),
+    ]
+
+    mocker.patch("app.core.TranscriptionWorker")
+
+    # 💥 Stop infinite loop immediately
+    mocker.patch("time.sleep", side_effect=KeyboardInterrupt)
+
+    core.run_transcriber()
+
+    # CUDA attempt + CPU fallback
+    assert load_model.call_count == 2
+
+
+def test_show_logs(capsys):
+    core.show_logs()
+    captured = capsys.readouterr()
+    assert "Logs saved to" in captured.out

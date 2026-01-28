@@ -104,3 +104,109 @@ def test_migrate_from_logs(mock_db_connection, mocker):
     processed = db.get_all_processed_filenames()
     assert "valid_file_1.mp3" in processed
     assert "valid_file_2.wav" in processed
+
+
+def test_get_db_connection_closes_connection(mocker):
+    mock_conn = mocker.MagicMock()
+    mocker.patch("sqlite3.connect", return_value=mock_conn)
+
+    with db.get_db_connection() as conn:
+        assert conn is mock_conn
+
+    mock_conn.close.assert_called_once()
+
+
+def test_init_db_chmod_os_error(mock_db_connection, mocker, capsys):
+    mocker.patch("os.path.exists", return_value=True)
+    mocker.patch("os.chmod", side_effect=OSError("Permission denied"))
+
+    db.init_db()
+
+    captured = capsys.readouterr()
+    assert "Could not set secure permissions on DB" in captured.out
+
+
+def test_is_file_processed_sqlite_error(mocker, capsys):
+    mocker.patch(
+        "app.db.get_db_connection",
+        side_effect=sqlite3.Error("DB failure"),
+    )
+
+    result = db.is_file_processed("file.mp3")
+
+    assert result is False
+    captured = capsys.readouterr()
+    assert "Failed to check file" in captured.out
+
+
+def test_add_processed_file_sqlite_error(mocker, capsys):
+    mocker.patch(
+        "app.db.get_db_connection",
+        side_effect=sqlite3.Error("Insert failed"),
+    )
+
+    db.add_processed_file("file.mp3", "/tmp/file.mp3")
+
+    captured = capsys.readouterr()
+    assert "Failed to mark file as processed" in captured.out
+
+
+def test_get_all_processed_filenames_sqlite_error(mocker, capsys):
+    mocker.patch(
+        "app.db.get_db_connection",
+        side_effect=sqlite3.Error("Select failed"),
+    )
+
+    result = db.get_all_processed_filenames()
+
+    assert result == set()
+    captured = capsys.readouterr()
+    assert "Failed to fetch processed filenames" in captured.out
+
+
+def test_migrate_from_logs_no_log_dir(mocker):
+    mocker.patch("os.path.exists", return_value=False)
+
+    # Should simply return without error
+    db.migrate_from_logs()
+
+
+def test_migrate_from_logs_db_already_has_data(mock_db_connection, mocker):
+    mocker.patch("os.path.exists", return_value=True)
+    mocker.patch("os.listdir", return_value=["dummy.log"])
+    mocker.patch("os.chmod")
+
+    # Initialize schema
+    db.init_db()
+
+    # Seed DB with one record
+    mock_db_connection.execute(
+        "INSERT INTO processed_files (filename) VALUES ('existing.mp3')"
+    )
+    mock_db_connection.commit()
+
+    db.migrate_from_logs()
+
+    # Nothing new should be added
+    rows = mock_db_connection.execute(
+        "SELECT COUNT(*) FROM processed_files"
+    ).fetchone()[0]
+
+    assert rows == 1
+
+
+def test_migrate_from_logs_log_file_os_error(mock_db_connection, mocker, capsys):
+    mocker.patch("os.path.exists", return_value=True)
+    mocker.patch("os.listdir", return_value=["bad_daily.log"])
+    mocker.patch("os.chmod")
+
+    # Initialize schema so migration proceeds
+    db.init_db()
+
+    # Force log file open to fail
+    mocker.patch("builtins.open", side_effect=OSError("Cannot open"))
+
+    db.migrate_from_logs()
+
+    captured = capsys.readouterr()
+    assert "Could not read log file" in captured.out

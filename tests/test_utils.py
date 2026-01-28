@@ -1,5 +1,35 @@
-import pytest  # noqa: F401
-import app.utils as utils
+import pytest
+from app import utils
+
+
+@pytest.mark.parametrize(
+    "os_name, expected_call",
+    [
+        ("nt", ("title Test Title",)),
+        ("posix", ("\x1b]2;Test Title\x07",)),
+    ],
+)
+def test_set_window_title(mocker, os_name, expected_call):
+    mocker.patch("app.utils.os.name", os_name)
+
+    mock_run = mocker.patch("app.utils.subprocess.run")
+    mock_write = mocker.patch("app.utils.sys.stdout.write")
+
+    utils.set_window_title("Test Title")
+
+    if os_name == "nt":
+        mock_run.assert_called_once_with("title Test Title", shell=True)
+        mock_write.assert_not_called()
+    else:
+        mock_write.assert_called_once_with("\x1b]2;Test Title\x07")
+        mock_run.assert_not_called()
+
+
+def test_format_duration_error():
+    # Type checking ignores passed for running the code logic test
+    # The actual code handles exceptions
+    assert utils.format_duration("string") == "Unknown duration"  # type: ignore
+    assert utils.format_duration(-1) == "Unknown duration"
 
 
 def test_check_command_exists(mocker):
@@ -105,3 +135,154 @@ def test_get_memory_info_unknown(mocker):
     total_gb, mem_type = utils.get_memory_info()
     assert total_gb is None
     assert mem_type is None
+
+
+def test_get_memory_info_exception(mocker):
+    """Test get_memory_info returns None, None for unknown/error."""
+    mocker.patch("torch.cuda.is_available", return_value=True)
+    mocker.patch("torch.cuda.get_device_properties", side_effect=Exception)
+
+    total_gb, mem_type = utils.get_memory_info()
+    assert total_gb is None
+    assert mem_type is None
+
+
+def test_get_device_name(mocker):
+    mocker.patch("torch.cuda.is_available", return_value=True)
+    mocker.patch("torch.cuda.get_device_name", return_value="RTX 4090")
+    assert utils.get_device_name() == "NVIDIA CUDA (RTX 4090)"
+
+    mocker.patch("torch.cuda.is_available", return_value=False)
+    mocker.patch("torch.backends.mps.is_available", return_value=True)
+    assert utils.get_device_name() == "Apple Silicon (MPS)"
+
+    mocker.patch("torch.backends.mps.is_available", return_value=False)
+    assert utils.get_device_name() == "CPU Only"
+
+
+def test_show_logs_app(mocker, capsys):
+    # Mock banner
+    mocker.patch("app.utils.print_banner")
+    mocker.patch("app.utils.clear_screen")
+
+    # Mock glob
+    mock_log_dir = mocker.MagicMock()
+    # Need to patch the actual import in utils or the config attribute
+    mocker.patch("app.config.APP_LOGS_DIR", mock_log_dir)
+
+    mock_file = mocker.MagicMock()
+    mock_file.name = "log_daily.log"
+    # mtime
+    mocker.patch("os.path.getmtime", return_value=12345)
+
+    # glob returns a list of Paths
+    mock_log_dir.glob.return_value = [mock_file]
+
+    # Mock open and file content
+    mocker.patch("builtins.open", mocker.mock_open(read_data="Line 1\nLine 2\n"))
+
+    utils.show_logs("app")
+
+    captured = capsys.readouterr()
+    assert "Line 1" in captured.out
+
+
+def test_show_logs_transcribed_audio(mocker, capsys):
+    # Mock banner
+    mocker.patch("app.utils.print_banner")
+    mocker.patch("app.utils.clear_screen")
+
+    # Mock glob
+    mock_log_dir = mocker.MagicMock()
+    mocker.patch("app.config.TRANSCRIBED_AUDIO_LOGS_DIR", mock_log_dir)
+
+    mock_file = mocker.MagicMock()
+    mock_file.name = "log_daily.log"
+    # mtime
+    mocker.patch("os.path.getmtime", return_value=12345)
+
+    # glob returns a list of Paths
+    mock_log_dir.glob.return_value = [mock_file]
+
+    # Mock open and file content
+    mocker.patch("builtins.open", mocker.mock_open(read_data="Line 1\nLine 2\n"))
+
+    utils.show_logs("transcribed_audio")
+
+    captured = capsys.readouterr()
+    assert "Line 1" in captured.out
+
+
+def test_show_logs_app_folder_no_logs(mocker, capsys):
+    mocker.patch("app.utils.print_banner")
+    mock_log_dir = mocker.MagicMock()
+    mocker.patch("app.config.APP_LOGS_DIR", mock_log_dir)
+    mock_log_dir.glob.return_value = []
+
+    utils.show_logs("app")
+    captured = capsys.readouterr()
+    assert "No log files found" in captured.out
+
+
+def test_show_logs_transcribed_audio_folder_no_logs(mocker, capsys):
+    mocker.patch("app.utils.print_banner")
+    mock_log_dir = mocker.MagicMock()
+    mocker.patch("app.config.TRANSCRIBED_AUDIO_LOGS_DIR", mock_log_dir)
+    mock_log_dir.glob.return_value = []
+
+    utils.show_logs("transcribed_audio")
+    captured = capsys.readouterr()
+    assert "No log files found" in captured.out
+
+
+def test_show_logs_app_folder_empty_file(mocker, capsys):
+    mocker.patch("app.utils.print_banner")
+    mock_log_dir = mocker.MagicMock()
+    mocker.patch("app.config.APP_LOGS_DIR", mock_log_dir)
+    mock_file = mocker.MagicMock()
+    mock_file.name = "log_daily.log"
+    mocker.patch("os.path.getmtime", return_value=12345)
+    mock_log_dir.glob.return_value = [mock_file]
+    mocker.patch("builtins.open", mocker.mock_open(read_data=""))
+    utils.show_logs("app")
+    captured = capsys.readouterr()
+    assert "(Log file is empty)" in captured.out
+
+
+def test_show_logs_transcribed_audio_folder_empty_file(mocker, capsys):
+    mocker.patch("app.utils.print_banner")
+    mock_log_dir = mocker.MagicMock()
+    mocker.patch("app.config.TRANSCRIBED_AUDIO_LOGS_DIR", mock_log_dir)
+    mock_file = mocker.MagicMock()
+    mock_file.name = "log_daily.log"
+    mocker.patch("os.path.getmtime", return_value=12345)
+    mock_log_dir.glob.return_value = [mock_file]
+    mocker.patch("builtins.open", mocker.mock_open(read_data=""))
+    utils.show_logs("transcribed_audio")
+    captured = capsys.readouterr()
+    assert "(Log file is empty)" in captured.out
+
+
+def test_show_logs_invalid_type():
+    with pytest.raises(ValueError):
+        utils.show_logs("invalid")  # type: ignore
+
+
+def test_show_logs_app_file_read_exception(mocker, capsys):
+    mocker.patch("app.utils.print_banner")
+    mock_log_dir = mocker.MagicMock()
+    mocker.patch("app.config.APP_LOGS_DIR", mock_log_dir)
+    mock_file = mocker.MagicMock()
+    mock_file.name = "log_daily.log"
+    mock_log_dir.glob.return_value = [mock_file]
+    mocker.patch("os.path.getmtime", return_value=12345)
+    mocker.patch(
+        "builtins.open",
+        side_effect=OSError("Permission denied"),
+    )
+
+    utils.show_logs("app")
+
+    captured = capsys.readouterr()
+    assert "Error reading log file" in captured.out
+    assert "Permission denied" in captured.out

@@ -1,7 +1,7 @@
 import pytest
-from hypothesis import given, strategies as st
 import math
 from app.utils import format_duration
+from hypothesis import given, strategies as st
 
 
 @given(st.floats(allow_nan=True, allow_infinity=True))

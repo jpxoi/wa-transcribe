@@ -53,6 +53,26 @@ def test_save_to_log(mocker):
     assert "5.5s" in args  # .1f format
 
 
+def test_save_to_log_exception_no_write(mocker):
+    """Test save_to_log handles exceptions gracefully."""
+    mocker.patch("os.makedirs")
+    m = mocker.mock_open()
+    mock_open = mocker.patch("app.transcriber.open", m)
+
+    # Make write() fail with IOError
+    m().write.side_effect = IOError("Write failed")
+
+    transcriber.save_to_log(
+        "Transcription text",
+        "/path/audio.mp3",
+        "1m 30s",
+        5.5,
+    )
+
+    mock_open.assert_called()
+    m().write.assert_called_once()  # write attempted
+
+
 def test_worker_initialization(worker, mock_model):
     """Test worker initializes effectively."""
     assert worker.model == mock_model
@@ -94,6 +114,85 @@ def test_process_file_success(
 
     # Should add to DB
     mock_add_db.assert_called_with("test_audio.ogg", "/tmp/test_audio.ogg")
+
+
+@patch("app.transcriber.whisper.load_audio")
+@patch("app.transcriber.save_to_log")
+@patch("app.db.add_processed_file")
+@patch("app.transcriber.pyperclip.copy")
+def test_process_file_unknown_duration(
+    mock_copy,
+    mock_add_db,
+    mock_save_log,
+    mock_load_audio,
+    worker,
+    capsys,
+):
+    """Test process_file falls back to 'Unknown duration' and still transcribes."""
+
+    # Force duration calculation to fail
+    mock_load_audio.side_effect = Exception("decode failed")
+
+    with patch.object(worker, "wait_for_file_ready", return_value=True):
+        worker.process_file("/tmp/test_audio.ogg")
+
+    # Transcription should still happen
+    worker.model.transcribe.assert_called_once()
+
+    captured = capsys.readouterr()
+    assert "Unknown duration" in captured.out
+
+
+@patch("app.transcriber.whisper.load_audio")
+def test_process_file_exception(mock_load_audio, worker, capsys):
+    """Test process_file handles transcription exceptions gracefully."""
+
+    # Make duration succeed
+    mock_load_audio.return_value = [0.0] * 16000
+
+    # Force transcription to fail
+    worker.model.transcribe.side_effect = Exception("Model failure")
+
+    with patch.object(worker, "wait_for_file_ready", return_value=True):
+        worker.process_file("/tmp/test_audio.ogg")
+
+    captured = capsys.readouterr()
+    assert "✗ [ERROR]" in captured.out
+    assert "Model failure" in captured.out
+
+
+@patch("app.transcriber.whisper.load_audio")
+@patch("app.transcriber.pyperclip.copy")
+@patch("app.transcriber.save_to_log")
+@patch("app.db.add_processed_file")
+def test_process_file_clipboard_exception(
+    mock_add_db,
+    mock_save_log,
+    mock_copy,
+    mock_load_audio,
+    worker,
+    capsys,
+):
+    """Test clipboard failure does not break processing."""
+
+    mock_load_audio.return_value = [0.0] * 16000
+    mock_copy.side_effect = Exception("Clipboard unavailable")
+
+    with patch.object(worker, "wait_for_file_ready", return_value=True):
+        worker.process_file("/tmp/test_audio.ogg")
+
+    # Transcription still happens
+    worker.model.transcribe.assert_called_once()
+
+    # Log + DB still happen
+    mock_save_log.assert_called_once()
+    mock_add_db.assert_called_once()
+
+    captured = capsys.readouterr()
+    assert (
+        "Clipboard unavailable" in captured.out
+        or "⚠ Clipboard unavailable" in captured.out
+    )
 
 
 def test_process_file_not_ready(worker):
