@@ -14,14 +14,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-import sqlite3
 import os
-import datetime
 import re
-import app.config as config
+import sqlite3
+import datetime
+from app import config
+from colorama import Fore, Style
 from typing import Set, Generator
 from contextlib import contextmanager
-from colorama import Fore, Style
 
 
 @contextmanager

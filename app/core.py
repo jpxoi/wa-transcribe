@@ -16,87 +16,19 @@
 
 import os
 import time
-import datetime
 import whisper
-import pyperclip
 import queue
-import threading
-import app.db as db
-import app.config as config
-import app.utils as utils
-from typing import Optional, Any
+from typing import Any
 from watchdog.observers import Observer
-from watchdog.events import FileSystemEventHandler, FileSystemEvent
 from colorama import init, Fore, Style
 from tqdm import tqdm
+from app import db, utils, config, maintenance
+from app.monitor import InternalAudioHandler
+from app.transcriber import TranscriptionWorker
 
 init(autoreset=True)
 
 WhisperModel = Any
-
-
-def cleanup_unused_models(
-    current_model_name: str, retention_days: int = config.MODEL_RETENTION_DAYS
-) -> None:
-    """
-    Deletes models from the cache ONLY if they haven't been used in 7 days.
-    """
-    cache_dir: str = os.path.expanduser("~/.cache/whisper")
-    if not os.path.exists(cache_dir):
-        return
-
-    keep_filename: str = f"{current_model_name}.pt"
-    retention_period = retention_days * 24 * 60 * 60  # in seconds
-    current_time = time.time()
-
-    print(
-        f"{Fore.CYAN}🧹 Maintenance:{Style.RESET_ALL} Checking for old, unused models..."
-    )
-
-    for filename in os.listdir(cache_dir):
-        if filename in config.KNOWN_MODELS and filename != keep_filename:
-            file_path = os.path.join(cache_dir, filename)
-            try:
-                last_access = os.stat(file_path).st_atime
-
-                if (current_time - last_access) > retention_period:
-                    os.remove(file_path)
-                    print(
-                        f"   {Fore.YELLOW}🗑️ Deleted old model:{Style.RESET_ALL} {filename}"
-                    )
-                else:
-                    pass
-            except OSError:
-                pass
-
-
-def save_to_log(text: str, source_file: str, duration: str, elapsed: float) -> None:
-    """
-    Appends transcript to a daily log file.
-
-    Args:
-        text (str): The transcribed text content.
-        source_file (str): The full path to the original audio file.
-    """
-    os.makedirs(config.TRANSCRIBED_AUDIO_LOGS_DIR, exist_ok=True)
-
-    date_str = datetime.datetime.now().strftime("%Y-%m-%d")
-    log_file = os.path.join(config.TRANSCRIBED_AUDIO_LOGS_DIR, f"{date_str}_daily.log")
-
-    timestamp = datetime.datetime.now().strftime("%H:%M:%S")
-    filename = os.path.basename(source_file)
-
-    header_line = f"─── {timestamp} INFO ".ljust(80, "─")
-
-    meta_info = f"{filename}  |  ⏳ {duration}  |  ⏱ done in {elapsed:.1f}s"
-
-    log_entry = f"{header_line}\n{meta_info}\n\n{text.strip()}\n\n"
-
-    try:
-        with open(log_file, "a", encoding="utf-8") as f:
-            f.write(log_entry)
-    except IOError:
-        pass
 
 
 def queue_recent_files(audio_queue: queue.Queue) -> None:
@@ -150,162 +82,6 @@ def queue_recent_files(audio_queue: queue.Queue) -> None:
         print(f"   {Fore.GREEN}✓ Added {count} missed files to queue.{Style.RESET_ALL}")
 
 
-class TranscriptionWorker(threading.Thread):
-    def __init__(self, model: WhisperModel, audio_queue: queue.Queue) -> None:
-        super().__init__()
-        self.model = model
-        self.queue = audio_queue
-        self.daemon = True
-        self.start()
-
-    def run(self) -> None:
-        while True:
-            filename: str = self.queue.get()
-            try:
-                self.process_file(filename)
-            finally:
-                self.queue.task_done()
-
-    def process_file(self, filename: str) -> None:
-        """
-        Processes a single audio file and copies the transcript to the clipboard.
-
-        Args:
-            filename (str): The path to the audio file to process.
-        """
-        file_base = os.path.basename(filename)
-        pending_count = self.queue.qsize()
-        queue_msg = f" ({pending_count} more in queue)" if pending_count > 0 else ""
-
-        if not self.wait_for_file_ready(filename):
-            print(f"{Fore.RED}✗ [TIMEOUT]{Style.RESET_ALL} File not ready: {file_base}")
-            return
-
-        try:
-            audio = whisper.load_audio(filename)
-            duration_secs = len(audio) / whisper.audio.SAMPLE_RATE
-
-            m, s = divmod(duration_secs, 60)
-
-            if m > 0:
-                duration_fmt = f"{int(m)}m {int(s)}s"
-            else:
-                duration_fmt = f"{s:.1f}s"
-
-        except Exception:
-            duration_fmt = "Unknown duration"
-
-        timestamp = datetime.datetime.now().strftime("%H:%M:%S")
-        print(
-            f"\n{Style.DIM}[{timestamp}]{Style.RESET_ALL} {Fore.CYAN}⚡️ [WORKING]{Style.RESET_ALL} Processing: {Style.BRIGHT}{file_base}{Style.RESET_ALL} {Style.DIM}({duration_fmt}){queue_msg}"
-        )
-
-        start_time = time.time()
-
-        try:
-            # Smart FP16 selection:
-            # CUDA (NVIDIA) benefits from FP16.
-            # MPS (Mac) can use FP16 if explicitly enabled (requires recent PyTorch/OS).
-            # CPU always uses FP32 (fp16=False) to avoid warnings/crashes.
-
-            use_fp16 = False
-            device_type = "cpu"  # Default to CPU
-
-            if hasattr(self.model, "device"):
-                device_type = self.model.device.type  # Get actual device type
-
-            if device_type == "cuda":
-                use_fp16 = True
-            elif device_type == "mps":
-                use_fp16 = getattr(config, "ENABLE_MPS_FP16", False)
-
-            # Transcribe
-            result: dict = self.model.transcribe(
-                filename, fp16=use_fp16, language=config.TRANSCRIPTION_LANGUAGE
-            )
-            text: str = result["text"].strip()
-
-            elapsed = time.time() - start_time
-
-            # 4. Success Output
-            print(
-                f"{Fore.GREEN}✓ [DONE in {elapsed:.1f}s]{Style.RESET_ALL} Transcript:"
-            )
-            print(f"{Fore.WHITE}{Style.DIM}   {text}")
-
-            # 5. Clipboard & Log
-            try:
-                pyperclip.copy(text)
-                print(f"{Fore.BLUE}   📋 Copied to clipboard")
-            except Exception:
-                print(f"{Fore.YELLOW}   ⚠ Clipboard unavailable")
-
-            save_to_log(text, filename, duration_fmt, elapsed)
-            db.add_processed_file(file_base, filename)
-
-        except Exception as e:
-            print(f"{Fore.RED}✗ [ERROR]{Style.RESET_ALL} {e}")
-
-    def wait_for_file_ready(
-        self, filepath: str, timeout: int = config.FILE_READY_TIMEOUT
-    ) -> bool:
-        """
-        Polls the file size to ensure it has finished writing.
-
-        Args:
-            filepath (str): The path to the file to check.
-            timeout (int): The maximum time to wait for the file to be ready.
-
-        Returns:
-            bool: True if the file is ready, False if the timeout is reached.
-        """
-        start_time: float = time.time()
-        last_size: int = -1
-
-        while time.time() - start_time < timeout:
-            try:
-                current_size: int = os.path.getsize(filepath)
-                if current_size == last_size and current_size > 0:
-                    return True
-                last_size = current_size
-                time.sleep(0.5)
-            except OSError:
-                time.sleep(0.5)
-
-        return False
-
-
-class InternalAudioHandler(FileSystemEventHandler):
-    def __init__(self, audio_queue: queue.Queue) -> None:
-        self.queue: queue.Queue = audio_queue
-        self.last_transcribed: Optional[str] = None
-
-    def on_created(self, event: FileSystemEvent) -> None:
-        """
-        Triggered when a file is created in the watched directory.
-
-        Args:
-            event (FileSystemEvent): The file system event.
-        """
-        if event.is_directory:
-            return
-
-        # src_path is strictly a string in this context
-        filename: str = str(event.src_path)
-
-        # Watch for common audio extensions
-        if filename.endswith((".opus", ".m4a", ".mp3", ".wav")):
-            # Debounce duplicate events
-            if self.last_transcribed == filename:
-                return
-            self.last_transcribed = filename
-
-            print(
-                f"\n{Fore.MAGENTA}📥 [NEW]{Style.RESET_ALL} Detected: {os.path.basename(filename)}"
-            )
-            self.queue.put(filename)
-
-
 def run_transcriber() -> None:
     utils.print_banner()
 
@@ -326,7 +102,7 @@ def run_transcriber() -> None:
 
     # 2. Cleanup old models (if enabled)
     if config.MODEL_CLEANUP_ENABLED:
-        cleanup_unused_models(config.MODEL_SIZE)
+        maintenance.cleanup_unused_models(config.MODEL_SIZE)
 
     # 3. Detect Device & Load Model
     device = utils.get_compute_device()

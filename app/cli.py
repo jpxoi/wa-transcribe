@@ -1,10 +1,6 @@
 import sys
 import argparse
-import app.core as core
-import app.config as config
-import app.utils as utils
-import app.health as health
-import app.setup as setup
+from app import core, config, utils, health, setup
 
 
 def main() -> None:

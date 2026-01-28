@@ -20,11 +20,11 @@ import torch
 import platform
 import subprocess
 import importlib.util
-from collections import deque
-from typing import Optional, Literal, cast
+from app import config
 from pathlib import Path
+from collections import deque
 from colorama import Fore, Style
-import app.config as config
+from typing import Optional, Literal, cast
 
 
 def clear_screen():

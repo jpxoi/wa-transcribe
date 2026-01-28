@@ -14,13 +14,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
+import os
 import sys
 import platform
-import os
+from app import config, utils
 from typing import Optional, Dict
 from colorama import init, Fore, Style
-import app.config as config
-import app.utils as utils
 
 # Initialize colors
 init(autoreset=True)

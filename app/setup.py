@@ -14,12 +14,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-import questionary
-import app.utils as utils
-from questionary import Choice
-import app.config as config
-from colorama import Fore, Style
 import os
+import questionary
+from app import config, utils
+from questionary import Choice
+from colorama import Fore, Style
 
 
 MODEL_REQUIREMENTS = {

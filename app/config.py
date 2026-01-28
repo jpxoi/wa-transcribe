@@ -17,7 +17,7 @@
 import os
 import json
 import platform
-import app.utils as utils
+from app import utils
 from colorama import Style, Fore
 from pathlib import Path
 from typing import Optional, Dict, Any, List
