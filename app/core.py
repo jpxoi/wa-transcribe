@@ -149,7 +149,7 @@ def queue_recent_files(audio_queue: queue.Queue) -> None:
         return
 
     print(
-        f"{Fore.CYAN}🔍 Startup Scan:{Style.RESET_ALL} Checking for missed files (last {lookback_hours}h)..."
+        f"\n{Fore.CYAN}🔍 Startup Scan:{Style.RESET_ALL} Checking for missed files (last {lookback_hours}h)..."
     )
 
     now = time.time()
@@ -184,7 +184,6 @@ def queue_recent_files(audio_queue: queue.Queue) -> None:
         print(f"   {Fore.GREEN}✓ All caught up.{Style.RESET_ALL}")
     else:
         print(f"   {Fore.GREEN}✓ Added {count} missed files to queue.{Style.RESET_ALL}")
-    print("─" * 50)
 
 
 class TranscriptionWorker(threading.Thread):
