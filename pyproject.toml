@@ -30,6 +30,7 @@ dependencies = [
     "colorama",
     "tqdm",
     "questionary>=2.1.1",
+    "typer>=0.21.1",
 ]
 
 [project.urls]
@@ -37,7 +38,7 @@ Homepage = "https://github.com/jpxoi/wa-transcriber"
 Issues = "https://github.com/jpxoi/wa-transcriber/issues"
 
 [project.scripts]
-wa-transcriber = "app.cli:main"
+wa-transcriber = "app.cli:cli"
 
 [tool.setuptools.packages.find]
 where = ["."]

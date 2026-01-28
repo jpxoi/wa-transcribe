@@ -97,7 +97,7 @@ def run_transcriber() -> None:
             f"{Fore.RED}✗ [ERROR] Could not find WhatsApp Media folder.{Style.RESET_ALL}"
         )
         print(f"   OS Detected: {config.SYSTEM}")
-        print("   Please run 'wa-transcriber --setup' to configure the path.")
+        print("   Please run 'wa-transcriber setup' to configure the path.")
         return
 
     # 2. Cleanup old models (if enabled)

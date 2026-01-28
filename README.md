@@ -61,7 +61,7 @@ pip install .
 Before running the main program, run the included health check tool. This script analyzes your **System RAM** (CPU/MPS) or **VRAM** (NVIDIA) and calculates exactly which Whisper model your computer can handle safely.
 
 ```bash
-wa-transcriber --health
+wa-transcriber health
 ```
 
 * ✅ Verifies FFmpeg installation.
@@ -73,7 +73,7 @@ wa-transcriber --health
 Run the interactive setup wizard to configure the application:
 
 ```bash
-wa-transcriber --setup
+wa-transcriber setup
 ```
 
 This will guide you through:
@@ -86,7 +86,7 @@ This will guide you through:
 To view your current configuration at any time, run:
 
 ```bash
-wa-transcriber --config
+wa-transcriber config
 ```
 
 Configuration is stored in `config.json` in your system's application data directory (e.g., `~/Library/Application Support/wa-transcriber/` on macOS).
@@ -138,17 +138,17 @@ wa-transcriber
 | Command | Description |
 | --- | --- |
 | `wa-transcriber` | Starts the main transcription service. |
-| `wa-transcriber --setup` | Runs the interactive configuration wizard. |
-| `wa-transcriber --health` | Runs system diagnostics and hardware checks. |
-| `wa-transcriber --config` | Displays the current configuration. |
-| `wa-transcriber --reset` | Resets the application by removing all user data and configuration. |
-| `wa-transcriber --ta-logs` | Shows the last 50 lines of transcribed audio logs. |
-| `wa-transcriber --app-logs` | Shows the last 50 lines of application logs. |
+| `wa-transcriber setup` | Runs the interactive configuration wizard. |
+| `wa-transcriber health` | Runs system diagnostics and hardware checks. |
+| `wa-transcriber config` | Displays the current configuration. |
+| `wa-transcriber reset` | Resets the application by removing all user data and configuration. |
+| `wa-transcriber logs audio` | Shows the last 50 lines of transcribed audio logs. |
+| `wa-transcriber logs app` | Shows the last 50 lines of application logs. |
 
 ## ❓ Troubleshooting
 
 * **"Clipboard unavailable":** On Linux, you may need `xclip` or `xsel`. On Windows/Mac, this usually works out of the box.
-* **"CUDA out of memory":** Run `wa-transcriber --health` and switch to a smaller model (e.g., from `large` to `medium`).
+* **"CUDA out of memory":** Run `wa-transcriber health` and switch to a smaller model (e.g., from `large` to `medium`).
 * **Script doesn't trigger:** Ensure "Media Auto-Download" is ON in WhatsApp settings, or manually click the download arrow on the voice note.
 
 ## 🤝 Contributing

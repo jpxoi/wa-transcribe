@@ -166,7 +166,7 @@ def show_config() -> None:
     # --- Footer ---
     print(f"{Style.DIM}" + "─" * 50 + f"{Style.RESET_ALL}")
     print(
-        f" {Fore.GREEN}➜ To Edit:{Style.RESET_ALL}     Run {Style.BRIGHT}wa-transcriber --setup{Style.RESET_ALL}"
+        f" {Fore.GREEN}➜ To Edit:{Style.RESET_ALL}     Run {Style.BRIGHT}wa-transcriber setup{Style.RESET_ALL}"
     )
     print(
         f" {Fore.GREEN}➜ Config File:{Style.RESET_ALL} {Style.DIM}{CONFIG_FILE_PATH}{Style.RESET_ALL}\n"

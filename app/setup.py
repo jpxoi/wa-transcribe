@@ -39,14 +39,14 @@ def reset_application(interactive: bool = True) -> None:
     Args:
         interactive (bool): Whether to prompt for confirmation. Defaults to True.
     """
-    if (
-        not interactive
-        or questionary.confirm(
+    utils.print_banner("Reset Application")
+
+    if interactive:
+        if not questionary.confirm(
             "Are you sure you want to reset all application data? This cannot be undone.",
             default=False,
-        ).ask()
-    ):
-        return
+        ).ask():
+            return
 
     app_data_dir = os.path.expanduser(config.APP_DATA_DIR)
 

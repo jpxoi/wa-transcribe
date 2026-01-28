@@ -3,4 +3,5 @@ pyperclip
 watchdog
 torch
 colorama
+typer
 tqdm
