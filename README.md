@@ -7,6 +7,7 @@ A lightning-fast, privacy-focused tool that automatically transcribes incoming W
 > [!IMPORTANT]
 > **Desktop Only:** This tool requires the official **WhatsApp Desktop App** (Store Version). It monitors the internal file system for new `.opus` files.
 
+![CI](https://github.com/jpxoi/wa-transcriber/actions/workflows/ci.yml/badge.svg)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python&logoColor=white)
 ![OpenAI Whisper](https://img.shields.io/badge/AI-OpenAI%20Whisper-green?logo=openai&logoColor=white)
 ![Platform](https://img.shields.io/badge/Platform-macOS%20%7C%20Windows-lightgrey?logo=apple&logoColor=black)
