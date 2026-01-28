@@ -58,10 +58,12 @@ source .venv/bin/activate
 .venv\Scripts\activate
 ```
 
-### Install dependencies
+### Install the package
+
+This will install the package in editable mode, which means that any changes made to the source code will be reflected immediately without needing to reinstall the package.
 
 ```bash
-pip install -r requirements.txt
+pip install -e .
 ```
 
 ### Run the Health Check (Crucial)
@@ -69,7 +71,7 @@ pip install -r requirements.txt
 Before running the main program, run the included health check tool. This script analyzes your **System RAM** (CPU/MPS) or **VRAM** (NVIDIA) and calculates exactly which Whisper model your computer can handle safely.
 
 ```bash
-python main.py --health
+wa-transcriber --health
 ```
 
 * ✅ Verifies FFmpeg installation.
@@ -82,7 +84,7 @@ Open `app/config.py` to adjust settings.
 
 ### Model Selection
 
-Based on the output of `python main.py --health`, set your `MODEL_SIZE`:
+Based on the output of `wa-transcriber --health`, set your `MODEL_SIZE`:
 
 | Model | VRAM/RAM Req | Speed | Accuracy | Best For |
 | --- | --- | --- | --- | --- |
@@ -110,7 +112,7 @@ The script attempts to auto-detect paths on macOS.
 Run the main script. It will initialize the model and start watching the folder.
 
 ```bash
-python main.py
+wa-transcriber
 
 ```
 
@@ -129,7 +131,7 @@ python main.py
 ## ❓ Troubleshooting
 
 * **"Clipboard unavailable":** On Linux, you may need `xclip` or `xsel`. On Windows/Mac, this usually works out of the box.
-* **"CUDA out of memory":** Run `python main.py --health` and switch to a smaller model (e.g., from `large` to `medium`).
+* **"CUDA out of memory":** Run `wa-transcriber --health` and switch to a smaller model (e.g., from `large` to `medium`).
 * **Script doesn't trigger:** Ensure "Media Auto-Download" is ON in WhatsApp settings, or manually click the download arrow on the voice note.
 
 ## 🤝 Contributing
