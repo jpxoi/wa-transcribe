@@ -56,8 +56,8 @@ Have an idea to make the tool faster or smarter?
 2. **Clone** your fork locally:
 
 ```bash
-git clone https://github.com/YOUR-USERNAME/wa-transcribe.git
-cd wa-transcribe
+git clone https://github.com/YOUR-USERNAME/wa-transcriber.git
+cd wa-transcriber
 ```
 
 1. **Create a Virtual Environment:**

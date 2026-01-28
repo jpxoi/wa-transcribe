@@ -44,8 +44,8 @@ Ensure you have a modern Python version installed.
 ### Clone the repository
 
 ```bash
-git clone https://github.com/jpxoi/wa-transcribe.git
-cd wa-transcribe
+git clone https://github.com/jpxoi/wa-transcriber.git
+cd wa-transcriber
 ```
 
 ### Create a virtual environment

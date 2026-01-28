@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wa-transcriber"
+version = "1.0.0"
+description = "Automated local WhatsApp voice note transcriber"
+readme = "README.md"
+authors = [{ name = "Jean Paul Fernandez", email = "hello@jpxoi.com" }]
+license = { file = "LICENSE" }
+requires-python = ">=3.10"
+keywords = ["whatsapp", "whisper", "transcription", "automation", "audio"]
+
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Operating System :: OS Independent",
+    "Environment :: Console",
+]
+
+dependencies = [
+    "openai-whisper>=20231117",
+    "pyperclip",
+    "watchdog",
+    "torch",
+    "colorama",
+    "tqdm"
+]
+
+[project.urls]
+Homepage = "https://github.com/jpxoi/wa-transcriber"
+Issues = "https://github.com/jpxoi/wa-transcriber/issues"
+
+[project.scripts]
+wa-transcriber = "app.core:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*"]
