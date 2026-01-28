@@ -243,7 +243,16 @@ def run_diagnostics() -> None:
 
     # 4. Python Dependencies
     print(f"{Fore.WHITE}{Style.DIM}--- Python Libraries ---{Style.RESET_ALL}")
-    deps = ["torch", "whisper", "watchdog", "pyperclip", "colorama", "tqdm"]
+    deps = [
+        "torch",
+        "whisper",
+        "watchdog",
+        "pyperclip",
+        "questionary",
+        "colorama",
+        "typer",
+        "tqdm",
+    ]
     for dep in deps:
         if utils.check_import(dep):
             print_status(dep, True, "Installed")
