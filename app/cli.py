@@ -72,7 +72,7 @@ def logs(
     target: Literal["transcribed_audio", "app"] = (
         "transcribed_audio" if log_type == LogType.audio else "app"
     )
-    utils.show_logs(type=target)
+    utils.show_logs(target)
 
 
 # --- MAIN LOGIC (Renamed to avoid conflict) ---
