@@ -34,7 +34,9 @@ init(autoreset=True)
 WhisperModel = Any
 
 
-def cleanup_unused_models(current_model_name: str) -> None:
+def cleanup_unused_models(
+    current_model_name: str, retention_days: int = config.MODEL_RETENTION_DAYS
+) -> None:
     """
     Deletes models from the cache ONLY if they haven't been used in 7 days.
     """
@@ -43,7 +45,7 @@ def cleanup_unused_models(current_model_name: str) -> None:
         return
 
     keep_filename: str = f"{current_model_name}.pt"
-    retention_period = config.MODEL_RETENTION_DAYS * 24 * 60 * 60  # in seconds
+    retention_period = retention_days * 24 * 60 * 60  # in seconds
     current_time = time.time()
 
     print(
@@ -343,8 +345,9 @@ def main() -> None:
         print("   Please open 'config.py' and manually set WHATSAPP_INTERNAL_PATH.")
         return
 
-    # 2. Cleanup old models
-    cleanup_unused_models(config.MODEL_SIZE)
+    # 2. Cleanup old models (if enabled)
+    if config.MODEL_CLEANUP_ENABLED:
+        cleanup_unused_models(config.MODEL_SIZE)
 
     # 3. Detect Device & Load Model
     device = helpers.get_compute_device()
@@ -367,13 +370,15 @@ def main() -> None:
 
     print(f"{Fore.GREEN}✓ System Ready!{Style.RESET_ALL}")
 
-    # 4. Start Watching
+    # 4. Initialize Transcription Worker
     audio_queue: queue.Queue = queue.Queue()
     worker = TranscriptionWorker(model, audio_queue)  # noqa: F841
 
+    # 5. Queue recent files (if enabled)
     if config.SCAN_LOOKBACK_ENABLED:
         queue_recent_files(audio_queue)
 
+    # 6. Start Watching
     event_handler = InternalAudioHandler(audio_queue)
     observer = Observer()
     observer.schedule(event_handler, path=config.WHATSAPP_INTERNAL_PATH, recursive=True)

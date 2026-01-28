@@ -46,7 +46,6 @@ MANUAL_PATH_OVERRIDE: Optional[str] = None
 # forcing a language improves accuracy for short voice notes.
 TRANSCRIPTION_LANGUAGE: Optional[str] = None
 
-
 # --- 4. SCAN LOOKBACK HOURS ---
 # Enable or disable the scan lookback feature.
 # This allows the script to scan for missed files.
@@ -68,7 +67,20 @@ SCAN_LOOKBACK_HOURS: int = 1
 SCAN_LOG_HISTORY_DAYS: int = 3
 
 
-# --- 5. SYSTEM MEMORY MANAGEMENT ---
+# --- 5. MODEL CLEANUP ---
+# Enable or disable the model cleanup feature.
+# This allows the script to delete unused model files.
+# Default: True
+MODEL_CLEANUP_ENABLED: bool = True
+# You might want to disable this feature if you have other
+# scripts or applications that use the same model files.
+
+# Adjust the number of days to keep unused model files.
+# This can help free up disk space.
+# Default: 3 days
+MODEL_RETENTION_DAYS: int = 3
+
+# --- 6. SYSTEM MEMORY MANAGEMENT ---
 # Adjust how aggressively the script uses your system memory.
 # Recommended Values:
 #   - 0.3 (Eco)        : Minimal impact, keeps the system responsive for other apps.
@@ -77,7 +89,7 @@ SCAN_LOG_HISTORY_DAYS: int = 3
 #   - 0.9 (Aggressive) : Maximum speed, utilizes almost all available system memory.
 SYSTEM_MEMORY_LIMIT_FACTOR: float = 0.5
 
-# --- 6. GPU VRAM MANAGEMENT ---
+# --- 7. GPU VRAM MANAGEMENT ---
 # Adjust how aggressively the script uses your dedicated NVIDIA GPU memory (VRAM).
 # Recommended Values:
 #   - 0.3 (Eco)        : Minimal impact, keeps other GPU-accelerated apps responsive.
@@ -85,16 +97,11 @@ SYSTEM_MEMORY_LIMIT_FACTOR: float = 0.5
 #   - 0.9 (Aggressive) : Maximum speed, utilizes almost all available VRAM.
 NVIDIA_VRAM_LIMIT_FACTOR: float = 0.7
 
-# --- 7. OTHER SETTINGS ---
+# --- 8. OTHER SETTINGS ---
 # Adjust the timeout for waiting on file readiness.
 # This can help if your files are large or your system is slow.
 # Default: 10 seconds
 FILE_READY_TIMEOUT: int = 10
-
-# Adjust the number of days to keep unused model files.
-# This can help free up disk space.
-# Default: 3 days
-MODEL_RETENTION_DAYS: int = 3
 
 
 # ==============================================================================
