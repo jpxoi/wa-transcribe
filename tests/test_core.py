@@ -136,6 +136,9 @@ def test_run_transcriber_model_load_fallback(mocker):
     mocker.patch("app.core.db.init_db")
     mocker.patch("app.core.db.migrate_from_logs")
 
+    # ⛔ Maintenance is NOT under test here
+    mocker.patch("app.core.maintenance.cleanup_unused_models")
+
     # Valid WhatsApp path
     mocker.patch("app.config.WHATSAPP_INTERNAL_PATH", "/mock/path")
     mocker.patch("os.path.exists", return_value=True)
