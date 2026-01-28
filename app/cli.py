@@ -25,16 +25,14 @@ def main() -> None:
         help="Run interactive setup to configure the application.",
     )
     group.add_argument(
-        "--show-config",
+        "--config",
         action="store_true",
         help="Shows the current configuration of the application.",
     )
     group.add_argument(
-        "--logs",
-        "-l",  # Short flag -l is handy
-        dest="show_logs",
+        "--ta-logs",
         action="store_true",
-        help="Print the last 50 lines of the most recent transcription log file.",
+        help="Print the last 50 lines of the most recent transcribed audio log file.",
     )
     group.add_argument(
         "--app-logs",
@@ -64,11 +62,11 @@ def main() -> None:
         health.run_diagnostics()
         return
 
-    if args.show_config:
+    if args.config:
         config.show_config()
         return
 
-    if args.show_logs:
+    if args.ta_logs:
         utils.show_logs("transcribed_audio")
         return
 
