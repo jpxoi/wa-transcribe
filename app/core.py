@@ -42,7 +42,11 @@ def queue_recent_files(audio_queue: queue.Queue) -> None:
     target_dir = config.WHATSAPP_INTERNAL_PATH
     lookback_hours = config.SCAN_LOOKBACK_HOURS
 
-    if not os.path.exists(target_dir or not config.SCAN_LOOKBACK_ENABLED):
+    if (
+        not target_dir
+        or not os.path.exists(target_dir)
+        or not config.SCAN_LOOKBACK_ENABLED
+    ):
         return
 
     print(
