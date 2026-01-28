@@ -70,6 +70,7 @@ SCAN_LOOKBACK_HOURS: int = 1
 # Default: "history.db" in the same directory as the script.
 DB_FILENAME: str = "history.db"
 
+
 # --- 6. MODEL CLEANUP ---
 # Enable or disable the model cleanup feature.
 # This allows the script to delete unused model files.
@@ -83,8 +84,14 @@ MODEL_CLEANUP_ENABLED: bool = True
 # Default: 3 days
 MODEL_RETENTION_DAYS: int = 3
 
+# --- 7. MPS FP16 ---
+# Enable FP16 for Mac (MPS). Experimental.
+# Set to True if you have a newer Mac and want slightly lower memory usage.
+# Default: False
+ENABLE_MPS_FP16: bool = False
 
-# --- 6. SYSTEM MEMORY MANAGEMENT ---
+
+# --- 8. SYSTEM MEMORY MANAGEMENT ---
 # Adjust how aggressively the script uses your system memory.
 # Recommended Values:
 #   - 0.3 (Eco)        : Minimal impact, keeps the system responsive for other apps.
@@ -94,7 +101,7 @@ MODEL_RETENTION_DAYS: int = 3
 SYSTEM_MEMORY_LIMIT_FACTOR: float = 0.5
 
 
-# --- 7. GPU VRAM MANAGEMENT ---
+# --- 9. GPU VRAM MANAGEMENT ---
 # Adjust how aggressively the script uses your dedicated NVIDIA GPU memory (VRAM).
 # Recommended Values:
 #   - 0.3 (Eco)        : Minimal impact, keeps other GPU-accelerated apps responsive.
@@ -103,7 +110,7 @@ SYSTEM_MEMORY_LIMIT_FACTOR: float = 0.5
 NVIDIA_VRAM_LIMIT_FACTOR: float = 0.7
 
 
-# --- 8. OTHER SETTINGS ---
+# --- 10. OTHER SETTINGS ---
 # Adjust the timeout for waiting on file readiness.
 # This can help if your files are large or your system is slow.
 # Default: 10 seconds
@@ -148,9 +155,38 @@ elif CURRENT_OS == "Darwin":  # macOS
         WHATSAPP_INTERNAL_PATH = _mac_direct_path
 
 elif CURRENT_OS == "Windows":
-    # Windows paths vary significantly by installation method (Store vs. Exe).
-    # Windows users generally need to use MANUAL_PATH_OVERRIDE.
-    WHATSAPP_INTERNAL_PATH = None
+    # 1. Microsoft Store Version (Most common on modern Windows)
+    # Path: %LOCALAPPDATA%\Packages\5319275A.WhatsAppDesktop_cv1g1gvanyjgm\LocalState\shared\transfers
+    _win_store_path = os.path.join(
+        os.getenv("LOCALAPPDATA", ""),
+        "Packages",
+        "5319275A.WhatsAppDesktop_cv1g1gvanyjgm",
+        "LocalState",
+        "shared",
+        "transfers",
+    )
+
+    # 2. Legacy/Direct Download Version
+    # Path: %USERPROFILE%\AppData\Local\WhatsApp\Media
+    _win_legacy_path = os.path.join(os.getenv("LOCALAPPDATA", ""), "WhatsApp", "Media")
+
+    # 3. New 'WhatsApp for Windows' (Beta/UWP) sometimes uses this:
+    _win_beta_path = os.path.join(
+        os.getenv("LOCALAPPDATA", ""),
+        "Packages",
+        "5319275A.WhatsAppDesktop_cv1g1gvanyjgm",
+        "LocalState",
+        "shared",
+        "media",
+    )
+
+    if os.path.exists(_win_store_path):
+        WHATSAPP_INTERNAL_PATH = _win_store_path
+    elif os.path.exists(_win_legacy_path):
+        WHATSAPP_INTERNAL_PATH = _win_legacy_path
+    elif os.path.exists(_win_beta_path):
+        WHATSAPP_INTERNAL_PATH = _win_beta_path
+
 
 # --- CONSTANTS ---
 # Official Model List (Updated from OpenAI Docs)

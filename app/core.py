@@ -207,10 +207,19 @@ class TranscriptionWorker(threading.Thread):
         try:
             # Smart FP16 selection:
             # CUDA (NVIDIA) benefits from FP16.
-            # MPS (Mac) and CPU usually require FP32 (fp16=False) to avoid issues.
+            # MPS (Mac) can use FP16 if explicitly enabled (requires recent PyTorch/OS).
+            # CPU always uses FP32 (fp16=False) to avoid warnings/crashes.
+
             use_fp16 = False
-            if hasattr(self.model, "device") and self.model.device.type == "cuda":
+            device_type = "cpu"  # Default to CPU
+
+            if hasattr(self.model, "device"):
+                device_type = self.model.device.type  # Get actual device type
+
+            if device_type == "cuda":
                 use_fp16 = True
+            elif device_type == "mps":
+                use_fp16 = getattr(config, "ENABLE_MPS_FP16", False)
 
             # Transcribe
             result: dict = self.model.transcribe(
