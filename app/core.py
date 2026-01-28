@@ -412,10 +412,11 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    if args.health_check:
+    if args.health:
         health.run_diagnostics()
-    else:
-        run_transcriber()
+        return
+
+    run_transcriber()
 
 
 if __name__ == "__main__":
