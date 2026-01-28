@@ -69,7 +69,9 @@ def logs(
     ],
 ):
     """Print the last 50 lines of the specified log file."""
-    target: Literal["transcribed_audio", "app"] = "transcribed_audio" if log_type == LogType.audio else "app"
+    target: Literal["transcribed_audio", "app"] = (
+        "transcribed_audio" if log_type == LogType.audio else "app"
+    )
     utils.show_logs(type=target)
 
 
