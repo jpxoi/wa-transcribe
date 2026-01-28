@@ -182,7 +182,7 @@ def queue_recent_files(audio_queue: queue.Queue) -> None:
         print(f"   {Fore.GREEN}✓ All caught up.{Style.RESET_ALL}")
     else:
         print(f"   {Fore.GREEN}✓ Added {count} missed files to queue.{Style.RESET_ALL}")
-    print("-" * 50)
+    print("─" * 50)
 
 
 class TranscriptionWorker(threading.Thread):
@@ -351,7 +351,7 @@ def main() -> None:
 
     # 3. Detect Device & Load Model
     device = helpers.get_compute_device()
-    print("-" * 50)
+    print("─" * 50)
     print(f"{Fore.CYAN}🚀 Initializing System{Style.RESET_ALL}")
     print(f"   Device: {Style.BRIGHT}{device.upper()}{Style.RESET_ALL}")
     print(f"   Model:  {Style.BRIGHT}{config.MODEL_SIZE}{Style.RESET_ALL}")
@@ -385,7 +385,7 @@ def main() -> None:
 
     print(f"\n{Fore.CYAN}👀 Watching Folder:{Style.RESET_ALL}")
     print(f"   {config.WHATSAPP_INTERNAL_PATH}")
-    print("-" * 50)
+    print("─" * 50)
     print("   Press Ctrl+C to stop the script.")
 
     observer.start()
