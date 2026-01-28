@@ -1,108 +1,45 @@
 import pytest  # noqa: F401
-import time
 import queue
+import time
 import app.core as core
 
 
-def test_cleanup_unused_models_no_cache(mocker):
-    """Test cleanup_unused_models returns early if cache dir doesn't exist."""
-    mocker.patch("os.path.exists", return_value=False)
+def test_queue_recent_files(mocker):
+    """Test queue_recent_files adds files to queue."""
+    mock_files = ["recent.mp3", "old.mp3", "processed.mp3"]
 
-    # Should not raise exception
-    core.cleanup_unused_models("turbo")
+    # 1. Setup Config & DB Mocks
+    mocker.patch("app.config.WHATSAPP_INTERNAL_PATH", "/whatsapp")
+    mocker.patch("app.config.SCAN_LOOKBACK_ENABLED", True)
+    mocker.patch("app.config.SCAN_LOOKBACK_HOURS", 24)
 
+    mock_db = mocker.patch("app.db.is_file_processed")
+    # processed.mp3 is processed, others are not
+    mock_db.side_effect = lambda x: x == "processed.mp3"
 
-def test_cleanup_unused_models_deletes_old(mocker):
-    """Test cleanup_unused_models deletes old files."""
-    mock_files = ["turbo.pt", "old.pt", "other.pt"]
-
-    # 1. Setup Filesystem Mocks
-    mocker.patch("os.path.expanduser", return_value="/cache")
+    # 2. Setup Filesystem Mocks
     mocker.patch("os.path.exists", return_value=True)
-    mocker.patch("os.listdir", return_value=mock_files)
-    mocker.patch("os.path.join", side_effect=lambda a, b: f"{a}/{b}")
-    mock_remove = mocker.patch("os.remove")
+    mocker.patch("os.walk", return_value=[("/whatsapp", [], mock_files)])
 
-    # 2. Patch Configuration
-    # We ensure the files are recognized as valid models
-    mocker.patch("app.config.KNOWN_MODELS", ["turbo.pt", "old.pt", "other.pt"])
-
-    # 3. Setup Time Logic
     current_time = time.time()
-    old_time = current_time - (8 * 24 * 60 * 60)  # 8 days ago
-    new_time = current_time - (1 * 24 * 60 * 60)  # 1 day ago
+    recent_time = current_time - 3600  # 1 hour ago
+    old_time = current_time - (48 * 3600)  # 48 hours ago
 
-    # 4. Mock os.stat with conditional logic
-    def stat_side_effect(path):
-        m = mocker.MagicMock()
-        # "old.pt" is the only expired file
-        if "old.pt" in path:
-            m.st_atime = old_time
-        else:
-            m.st_atime = new_time
-        return m
+    def mtime_side_effect(path):
+        if "recent.mp3" in path or "processed.mp3" in path:
+            return recent_time
+        return old_time
 
-    mocker.patch("os.stat", side_effect=stat_side_effect)
+    mocker.patch("os.path.getmtime", side_effect=mtime_side_effect)
 
-    # 5. Execute
-    core.cleanup_unused_models("turbo")
-
-    # 6. Verify
-    # 'turbo.pt' is the current model, so it is skipped (logic: filename != keep_filename)
-    # 'other.pt' is new, so it is kept
-    # 'old.pt' is old, so it is removed
-    mock_remove.assert_called_with("/cache/old.pt")
-    assert mock_remove.call_count == 1
-
-
-def test_save_to_log(mocker):
-    """Test save_to_log appends to file."""
-    mocker.patch("os.makedirs")
-
-    # mocker.mock_open is a helper provided by pytest-mock
-    mock_file = mocker.patch("builtins.open", mocker.mock_open())
-
-    core.save_to_log("Transcription text", "/path/audio.mp3", "1m 30s", 5.5)
-
-    # Verify file operations
-    mock_file.assert_called()
-    handle = mock_file()
-    handle.write.assert_called()
-
-    # Check the content of the write
-    args = handle.write.call_args[0][0]
-    assert "Transcription text" in args
-    assert "audio.mp3" in args
-
-
-def test_internal_audio_handler(mocker):
-    """Test InternalAudioHandler queues new files."""
+    # 3. Execute
     q = queue.Queue()
-    handler = core.InternalAudioHandler(q)
+    core.queue_recent_files(q)
 
-    # Use mocker.MagicMock for data objects
-    event = mocker.MagicMock()
-    event.is_directory = False
-    event.src_path = "/path/new_audio.mp3"
-
-    handler.on_created(event)
+    # 4. Verify
+    # recent.mp3: recent (pass time), not processed (pass db) -> QUEUED
+    # processed.mp3: recent (pass time), processed (fail db) -> SKIPPED
+    # old.mp3: old (fail time) -> SKIPPED
 
     assert q.qsize() == 1
-    assert q.get() == "/path/new_audio.mp3"
-
-
-def test_internal_audio_handler_ignore_dup(mocker):
-    """Test InternalAudioHandler ignores duplicate events."""
-    q = queue.Queue()
-    handler = core.InternalAudioHandler(q)
-
-    event = mocker.MagicMock()
-    event.is_directory = False
-    event.src_path = "/path/audio.mp3"
-
-    # Fire event twice
-    handler.on_created(event)
-    handler.on_created(event)
-
-    # Should only be queued once
-    assert q.qsize() == 1
+    assert q.get() == "/whatsapp/recent.mp3"

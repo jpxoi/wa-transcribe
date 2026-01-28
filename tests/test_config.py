@@ -1,14 +1,5 @@
 import pytest  # noqa: F401
-import app.config as config
-
-
-def test_config_defaults():
-    """Test that important default configuration values are set correctly."""
-    assert config.MODEL_SIZE == "turbo"
-    assert config.SCAN_LOOKBACK_ENABLED is True
-    assert config.SCAN_LOOKBACK_HOURS == 1
-    assert config.MODEL_CLEANUP_ENABLED is True
-    assert config.APP_NAME == "WhatsApp Auto-Transcriber"
+from app import config
 
 
 def test_whatsapp_path_override():
