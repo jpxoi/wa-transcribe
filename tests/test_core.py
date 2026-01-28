@@ -67,18 +67,6 @@ def test_save_to_log():
         assert "audio.mp3" in args
 
 
-def test_get_processed_history():
-    """Test get_processed_history parsing."""
-    mock_log_content = "─── INFO ───\naudio.mp3  |  ⏳ 1m 30s  |  ⏱ done\n\nText\n\n"
-
-    with (
-        patch("os.path.exists", return_value=True),
-        patch("builtins.open", mock_open(read_data=mock_log_content)),
-    ):
-        history = core.get_processed_history(days_to_check=1)
-        assert "audio.mp3" in history
-
-
 def test_internal_audio_handler():
     """Test InternalAudioHandler queues new files."""
     q = queue.Queue()

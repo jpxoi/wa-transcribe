@@ -34,17 +34,20 @@ from typing import List, Optional
 #   - "turbo"           : 🏎️ Default, Very Good (~6GB)
 MODEL_SIZE: str = "turbo"
 
+
 # --- 2. MANUAL PATH OVERRIDE (OPTIONAL) ---
 # If the script cannot find your WhatsApp folder automatically, paste the full path here.
 # Example: "/Users/jdoe/Library/Group Containers/group.net.whatsapp.WhatsApp.shared/Message/Media"
 # Leave as None to use auto-detection.
 MANUAL_PATH_OVERRIDE: Optional[str] = None
 
+
 # --- 3. LANGUAGE SETTINGS ---
 # None = Auto-detect (Good for multilingual users)
 # "en" = English, "es" = Spanish, "fr" = French, etc.
 # forcing a language improves accuracy for short voice notes.
 TRANSCRIPTION_LANGUAGE: Optional[str] = None
+
 
 # --- 4. SCAN LOOKBACK HOURS ---
 # Enable or disable the scan lookback feature.
@@ -61,13 +64,13 @@ SCAN_LOOKBACK_ENABLED: bool = True
 # and might consume a lot of system resources.
 SCAN_LOOKBACK_HOURS: int = 1
 
-# The number of days to check for processed files.
-# This prevents the script from transcribing the same file multiple times.
-# Default: 3
-SCAN_LOG_HISTORY_DAYS: int = 3
 
+# --- 5. DATABASE CONFIGURATION ---
+# Path to the database file.
+# Default: "history.db" in the same directory as the script.
+DB_FILENAME: str = "history.db"
 
-# --- 5. MODEL CLEANUP ---
+# --- 6. MODEL CLEANUP ---
 # Enable or disable the model cleanup feature.
 # This allows the script to delete unused model files.
 # Default: True
@@ -80,6 +83,7 @@ MODEL_CLEANUP_ENABLED: bool = True
 # Default: 3 days
 MODEL_RETENTION_DAYS: int = 3
 
+
 # --- 6. SYSTEM MEMORY MANAGEMENT ---
 # Adjust how aggressively the script uses your system memory.
 # Recommended Values:
@@ -89,6 +93,7 @@ MODEL_RETENTION_DAYS: int = 3
 #   - 0.9 (Aggressive) : Maximum speed, utilizes almost all available system memory.
 SYSTEM_MEMORY_LIMIT_FACTOR: float = 0.5
 
+
 # --- 7. GPU VRAM MANAGEMENT ---
 # Adjust how aggressively the script uses your dedicated NVIDIA GPU memory (VRAM).
 # Recommended Values:
@@ -96,6 +101,7 @@ SYSTEM_MEMORY_LIMIT_FACTOR: float = 0.5
 #   - 0.7 (Standard)   : (Recommended) Optimized for dedicated GPU performance.
 #   - 0.9 (Aggressive) : Maximum speed, utilizes almost all available VRAM.
 NVIDIA_VRAM_LIMIT_FACTOR: float = 0.7
+
 
 # --- 8. OTHER SETTINGS ---
 # Adjust the timeout for waiting on file readiness.

@@ -22,6 +22,7 @@ import pyperclip
 import argparse
 import queue
 import threading
+import app.db as db
 import app.config as config
 import app.utils as utils
 import app.health as health
@@ -100,47 +101,12 @@ def save_to_log(text: str, source_file: str, duration: str, elapsed: float) -> N
         pass
 
 
-def get_processed_history(
-    days_to_check: int = config.SCAN_LOG_HISTORY_DAYS,
-) -> set[str]:
-    """
-    Scans existing logs to find filenames that are already processed.
-
-    """
-    processed_files = set()
-    log_dir = config.LOG_FOLDER_PATH
-
-    if not os.path.exists(log_dir):
-        return processed_files
-
-    today = datetime.date.today()
-    dates_to_check = [today - datetime.timedelta(days=i) for i in range(days_to_check)]
-
-    for date_obj in dates_to_check:
-        log_filename = f"{date_obj.strftime('%Y-%m-%d')}_daily.log"
-        log_path = os.path.join(log_dir, log_filename)
-
-        if os.path.exists(log_path):
-            try:
-                with open(log_path, "r", encoding="utf-8") as f:
-                    for line in f:
-                        if "|" in line and "⏳" in line:
-                            parts = line.split("|")
-                            if len(parts) > 0:
-                                filename = parts[0].replace("●", "").strip()
-                                processed_files.add(filename)
-            except Exception:
-                continue
-
-    return processed_files
-
-
 def queue_recent_files(audio_queue: queue.Queue) -> None:
     """
     Recursively scans the folder and subfolders for recent audio files
     (based on config limit) that are NOT in the processed history.
     """
-    history = get_processed_history()
+    history = db.get_all_processed_filenames()
     target_dir = config.WHATSAPP_INTERNAL_PATH
 
     lookback_hours = config.SCAN_LOOKBACK_HOURS
@@ -268,6 +234,7 @@ class TranscriptionWorker(threading.Thread):
                 print(f"{Fore.YELLOW}   ! Clipboard unavailable")
 
             save_to_log(text, filename, duration_fmt, elapsed)
+            db.add_processed_file(file_base, filename)
 
         except Exception as e:
             print(f"{Fore.RED}✗ [ERROR]{Style.RESET_ALL} {e}")
@@ -334,6 +301,10 @@ class InternalAudioHandler(FileSystemEventHandler):
 
 def run_transcriber() -> None:
     utils.print_banner()
+
+    # 0. Initialize Database
+    db.init_db()
+    db.migrate_from_logs()
 
     # 1. Verify Paths
     if config.WHATSAPP_INTERNAL_PATH is None or not os.path.exists(

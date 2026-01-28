@@ -4,5 +4,3 @@ watchdog
 torch
 colorama
 tqdm
-pytest
-pytest-mock
