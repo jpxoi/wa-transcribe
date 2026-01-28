@@ -14,7 +14,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import typer
-from typing_extensions import Annotated
+from typing import Annotated, Literal
 from enum import Enum
 from app import core, config, utils, health, setup
 
@@ -69,8 +69,8 @@ def logs(
     ],
 ):
     """Print the last 50 lines of the specified log file."""
-    target = "transcribed_audio" if log_type == LogType.audio else "app"
-    utils.show_logs(target)
+    target: Literal["transcribed_audio", "app"] = "transcribed_audio" if log_type == LogType.audio else "app"
+    utils.show_logs(type=target)
 
 
 # --- MAIN LOGIC (Renamed to avoid conflict) ---
@@ -87,7 +87,7 @@ def app_startup(ctx: typer.Context):
         return
 
     # --- DEFAULT BEHAVIOR (Run Transcriber) ---
-    is_configured = config.load_configuration()
+    is_configured: bool = config.load_configuration()
     config.detect_whatsapp_path()
 
     if not is_configured:

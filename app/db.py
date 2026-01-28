@@ -30,7 +30,7 @@ def get_db_connection() -> Generator[sqlite3.Connection, None, None]:
     Context manager for database connections.
     Ensures connections are closed and rows are accessible by name.
     """
-    conn = sqlite3.connect(config.DB_PATH)
+    conn = sqlite3.connect(database=config.DB_PATH)
     # Enable accessing columns by name: row['filename']
     conn.row_factory = sqlite3.Row
     try:

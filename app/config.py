@@ -29,8 +29,8 @@ DEVELOPER_NAME = "Jean Paul Fernandez"
 DEVELOPER_USERNAME = "jpxoi"
 
 # --- OS-SPECIFIC DATA PATHS ---
-HOME_DIR = Path.home()
-SYSTEM = platform.system()
+HOME_DIR: Path = Path.home()
+SYSTEM: str = platform.system()
 
 
 def get_app_data_dir() -> Path:
@@ -45,18 +45,18 @@ def get_app_data_dir() -> Path:
         # Linux: ~/.config/wa-transcriber
         base = Path(os.getenv("XDG_CONFIG_HOME", HOME_DIR / ".config"))
 
-    app_dir = base / APP_NAME
+    app_dir: Path = base / APP_NAME
     app_dir.mkdir(parents=True, exist_ok=True)
     return app_dir
 
 
-APP_DATA_DIR = get_app_data_dir()
-CONFIG_FILE_PATH = APP_DATA_DIR / "config.json"
-DB_PATH = APP_DATA_DIR / "history.db"
+APP_DATA_DIR: Path = get_app_data_dir()
+CONFIG_FILE_PATH: Path = APP_DATA_DIR / "config.json"
+DB_PATH: Path = APP_DATA_DIR / "history.db"
 
 # --- LOGS ---
-APP_LOGS_DIR = APP_DATA_DIR / "logs" / "app"
-TRANSCRIBED_AUDIO_LOGS_DIR = APP_DATA_DIR / "logs" / "transcribed_audio"
+APP_LOGS_DIR: Path = APP_DATA_DIR / "logs" / "app"
+TRANSCRIBED_AUDIO_LOGS_DIR: Path = APP_DATA_DIR / "logs" / "transcribed_audio"
 
 # Ensure log directories exist
 APP_LOGS_DIR.mkdir(parents=True, exist_ok=True)
