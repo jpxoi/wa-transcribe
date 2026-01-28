@@ -1140,11 +1140,15 @@ dependencies = [
     { name = "colorama" },
     { name = "openai-whisper" },
     { name = "pyperclip" },
-    { name = "pytest" },
-    { name = "pytest-mock" },
     { name = "torch" },
     { name = "tqdm" },
     { name = "watchdog" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+    { name = "pytest-mock" },
 ]
 
 [package.metadata]
@@ -1152,11 +1156,15 @@ requires-dist = [
     { name = "colorama" },
     { name = "openai-whisper", specifier = ">=20231117" },
     { name = "pyperclip" },
-    { name = "pytest", specifier = ">=9.0.2" },
-    { name = "pytest-mock", specifier = ">=3.15.1" },
     { name = "torch" },
     { name = "tqdm" },
     { name = "watchdog" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pytest", specifier = ">=9.0.2" },
+    { name = "pytest-mock", specifier = ">=3.15.1" },
 ]
 
 [[package]]

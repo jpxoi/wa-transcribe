@@ -105,10 +105,11 @@ def queue_recent_files(audio_queue: queue.Queue) -> None:
     """
     Recursively scans the folder and subfolders for recent audio files
     (based on config limit) that are NOT in the processed history.
-    """
-    history = db.get_all_processed_filenames()
-    target_dir = config.WHATSAPP_INTERNAL_PATH
 
+    Args:
+        audio_queue (queue.Queue): The queue to add the files to.
+    """
+    target_dir = config.WHATSAPP_INTERNAL_PATH
     lookback_hours = config.SCAN_LOOKBACK_HOURS
 
     if not os.path.exists(target_dir or not config.SCAN_LOOKBACK_ENABLED):
@@ -128,9 +129,7 @@ def queue_recent_files(audio_queue: queue.Queue) -> None:
             if filename.endswith((".opus", ".m4a", ".mp3", ".wav")):
                 filepath = os.path.join(root, filename)
                 try:
-                    # Get modification time
                     mtime = os.path.getmtime(filepath)
-
                     if mtime > cutoff:
                         audio_files.append((mtime, filepath, filename))
                 except OSError:
@@ -138,8 +137,9 @@ def queue_recent_files(audio_queue: queue.Queue) -> None:
 
     audio_files.sort(key=lambda x: x[0])
 
+    # Check DB and queue if new
     for _, filepath, filename in audio_files:
-        if filename not in history:
+        if not db.is_file_processed(filename):
             print(
                 f"   {Fore.MAGENTA}+ Queuing missed file:{Style.RESET_ALL} {filename}"
             )

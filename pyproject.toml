@@ -29,8 +29,6 @@ dependencies = [
     "torch",
     "colorama",
     "tqdm",
-    "pytest>=9.0.2",
-    "pytest-mock>=3.15.1",
 ]
 
 [project.urls]
@@ -48,3 +46,9 @@ include = ["app*"]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 addopts = "-v"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+    "pytest-mock>=3.15.1",
+]

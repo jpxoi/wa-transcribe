@@ -1,0 +1,106 @@
+import pytest
+import sqlite3
+from contextlib import contextmanager
+import app.db as db
+
+# -----------------------------------------------------------------------------
+# FIXTURES
+# -----------------------------------------------------------------------------
+
+
+@pytest.fixture
+def mock_db_connection(mocker):
+    """
+    Creates an in-memory SQLite database and mocks the app.db.get_db_connection
+    context manager using the pytest-mock 'mocker' fixture.
+    """
+    # 1. Create in-memory DB
+    conn = sqlite3.connect(":memory:")
+    conn.row_factory = sqlite3.Row
+
+    # 2. Define the replacement Context Manager
+    @contextmanager
+    def mock_ctx_manager():
+        yield conn
+
+    # 3. Patch using mocker (Auto-cleanup is handled by pytest)
+    mocker.patch("app.db.get_db_connection", side_effect=mock_ctx_manager)
+
+    yield conn
+
+    conn.close()
+
+
+# -----------------------------------------------------------------------------
+# TESTS (Using mocker)
+# -----------------------------------------------------------------------------
+
+
+def test_init_db(mock_db_connection, mocker):
+    """Ensure tables are created correctly."""
+    # Setup mocks inline - clearer than decorators
+    mocker.patch("os.chmod")
+    mocker.patch("os.path.exists", return_value=True)
+
+    db.init_db()
+
+    cursor = mock_db_connection.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='processed_files';"
+    )
+    assert cursor.fetchone() is not None
+
+
+def test_add_and_check_processed_file(mock_db_connection, mocker):
+    # We patch init_db dependencies just to run the init
+    mocker.patch("os.chmod")
+    mocker.patch("os.path.exists", return_value=True)
+    db.init_db()
+
+    filename = "test_audio.mp3"
+    filepath = "/tmp/test_audio.mp3"
+
+    assert db.is_file_processed(filename) is False
+    db.add_processed_file(filename, filepath)
+    assert db.is_file_processed(filename) is True
+
+
+def test_get_all_processed_filenames(mock_db_connection, mocker):
+    mocker.patch("os.chmod")
+    mocker.patch("os.path.exists", return_value=True)
+    db.init_db()
+
+    db.add_processed_file("file1.mp3", "/path/1")
+    db.add_processed_file("file2.mp3", "/path/2")
+
+    processed = db.get_all_processed_filenames()
+
+    assert len(processed) == 2
+    assert "file1.mp3" in processed
+
+
+def test_migrate_from_logs(mock_db_connection, mocker):
+    """Test parsing of log files into database records."""
+    mocker.patch("os.chmod")
+    db.init_db()
+
+    # 1. Setup Mocks
+    # Notice how we don't need to pass these as arguments to the function anymore
+    mocker.patch("os.path.exists", return_value=True)
+    mocker.patch("os.listdir", return_value=["2023-01-01_daily.log"])
+
+    # 2. Mock File Content
+    mock_file_handle = mocker.MagicMock()
+    mock_file_handle.__enter__.return_value = [
+        "Ignored Header Line",
+        "valid_file_1.mp3 | ⏳ 1m 20s | ⏱ done in 5.0s",
+        "  valid_file_2.wav  | ⏳ 0m 30s | ⏱ done in 2.0s",
+    ]
+    mocker.patch("builtins.open", return_value=mock_file_handle)
+
+    # 3. Run Migration
+    db.migrate_from_logs()
+
+    # 4. Verify Results
+    processed = db.get_all_processed_filenames()
+    assert "valid_file_1.mp3" in processed
+    assert "valid_file_2.wav" in processed

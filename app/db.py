@@ -1,3 +1,19 @@
+# Copyright (C) 2026 Jean Paul Fernandez
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+
 import sqlite3
 import os
 import datetime
@@ -52,9 +68,12 @@ def init_db() -> None:
             )
             conn.commit()
 
-        # Security: Restrict file permissions to owner only (Linux/Mac)
+        # We wrap this in try/except to prevent crashes in tests or restricted envs
         if os.name == "posix" and os.path.exists(DB_PATH):
-            os.chmod(DB_PATH, 0o600)
+            try:
+                os.chmod(DB_PATH, 0o600)
+            except OSError as e:
+                logger.warning(f"Could not set secure permissions on DB: {e}")
 
     except sqlite3.Error as e:
         logger.error(
@@ -105,7 +124,7 @@ def get_all_processed_filenames() -> Set[str]:
     try:
         with get_db_connection() as conn:
             cursor = conn.execute("SELECT filename FROM processed_files")
-            return {row["filename"] for row in cursor.fetchall()}
+            return {row[0] for row in cursor.fetchall()}
     except sqlite3.Error as e:
         logger.error(
             f"{Fore.RED}[DB Error] Failed to fetch processed filenames: {e}{Style.RESET_ALL}"

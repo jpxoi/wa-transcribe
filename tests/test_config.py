@@ -1,3 +1,4 @@
+import pytest  # noqa: F401
 import app.config as config
 
 
