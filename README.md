@@ -41,14 +41,14 @@ Ensure you have a modern Python version installed.
 
 ## 🛠️ Installation
 
-1. **Clone the repository:**
+### Clone the repository
 
 ```bash
 git clone https://github.com/jpxoi/wa-transcribe.git
 cd wa-transcribe
 ```
 
-1. **Create a virtual environment:**
+### Create a virtual environment
 
 ```bash
 python -m venv .venv
@@ -58,13 +58,13 @@ source .venv/bin/activate
 .venv\Scripts\activate
 ```
 
-1. **Install dependencies:**
+### Install dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-## 🏥 Running the Health Check (Crucial)
+### Run the Health Check (Crucial)
 
 Before running the main program, run the included health check tool. This script analyzes your **System RAM** (CPU/MPS) or **VRAM** (NVIDIA) and calculates exactly which Whisper model your computer can handle safely.
 
