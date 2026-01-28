@@ -47,7 +47,28 @@ MANUAL_PATH_OVERRIDE: Optional[str] = None
 TRANSCRIPTION_LANGUAGE: Optional[str] = None
 
 
-# --- 4. SYSTEM MEMORY MANAGEMENT ---
+# --- 4. SCAN LOOKBACK HOURS ---
+# Enable or disable the scan lookback feature.
+# This allows the script to scan for missed files.
+# Default: True
+SCAN_LOOKBACK_ENABLED: bool = True
+
+# Adjust how many hours back the script will scan for missed files.
+# Recommended Values:
+#   - 1 (Default)     : Scan for files from the last hour.
+#   - 3 (Balanced)    : Scan for files from the last 3 hours.
+#   - 6 (Aggressive)  : Scan for files from the last 6 hours.
+# Anything above 6 hours is not recommended as it will take a long time to transcribe
+# and might consume a lot of system resources.
+SCAN_LOOKBACK_HOURS: int = 1
+
+# The number of days to check for processed files.
+# This prevents the script from transcribing the same file multiple times.
+# Default: 3
+SCAN_LOG_HISTORY_DAYS: int = 3
+
+
+# --- 5. SYSTEM MEMORY MANAGEMENT ---
 # Adjust how aggressively the script uses your system memory.
 # Recommended Values:
 #   - 0.3 (Eco)        : Minimal impact, keeps the system responsive for other apps.
@@ -56,13 +77,24 @@ TRANSCRIPTION_LANGUAGE: Optional[str] = None
 #   - 0.9 (Aggressive) : Maximum speed, utilizes almost all available system memory.
 SYSTEM_MEMORY_LIMIT_FACTOR: float = 0.5
 
-# --- 5. GPU VRAM MANAGEMENT ---
+# --- 6. GPU VRAM MANAGEMENT ---
 # Adjust how aggressively the script uses your dedicated NVIDIA GPU memory (VRAM).
 # Recommended Values:
 #   - 0.3 (Eco)        : Minimal impact, keeps other GPU-accelerated apps responsive.
 #   - 0.7 (Standard)   : (Recommended) Optimized for dedicated GPU performance.
 #   - 0.9 (Aggressive) : Maximum speed, utilizes almost all available VRAM.
 NVIDIA_VRAM_LIMIT_FACTOR: float = 0.7
+
+# --- 7. OTHER SETTINGS ---
+# Adjust the timeout for waiting on file readiness.
+# This can help if your files are large or your system is slow.
+# Default: 10 seconds
+FILE_READY_TIMEOUT: int = 10
+
+# Adjust the number of days to keep unused model files.
+# This can help free up disk space.
+# Default: 3 days
+MODEL_RETENTION_DAYS: int = 3
 
 
 # ==============================================================================

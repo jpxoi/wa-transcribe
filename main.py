@@ -43,7 +43,7 @@ def cleanup_unused_models(current_model_name: str) -> None:
         return
 
     keep_filename: str = f"{current_model_name}.pt"
-    retention_period = 7 * 24 * 60 * 60  # 7 days in seconds
+    retention_period = config.MODEL_RETENTION_DAYS * 24 * 60 * 60  # in seconds
     current_time = time.time()
 
     print(
@@ -96,12 +96,98 @@ def save_to_log(text: str, source_file: str, duration: str, elapsed: float) -> N
         pass
 
 
+def get_processed_history(
+    days_to_check: int = config.SCAN_LOG_HISTORY_DAYS,
+) -> set[str]:
+    """
+    Scans existing logs to find filenames that are already processed.
+
+    """
+    processed_files = set()
+    log_dir = config.LOG_FOLDER_PATH
+
+    if not os.path.exists(log_dir):
+        return processed_files
+
+    today = datetime.date.today()
+    dates_to_check = [today - datetime.timedelta(days=i) for i in range(days_to_check)]
+
+    for date_obj in dates_to_check:
+        log_filename = f"{date_obj.strftime('%Y-%m-%d')}_daily.log"
+        log_path = os.path.join(log_dir, log_filename)
+
+        if os.path.exists(log_path):
+            try:
+                with open(log_path, "r", encoding="utf-8") as f:
+                    for line in f:
+                        if "|" in line and "⏳" in line:
+                            parts = line.split("|")
+                            if len(parts) > 0:
+                                filename = parts[0].replace("●", "").strip()
+                                processed_files.add(filename)
+            except Exception:
+                continue
+
+    return processed_files
+
+
+def queue_recent_files(audio_queue: queue.Queue) -> None:
+    """
+    Recursively scans the folder and subfolders for recent audio files
+    (based on config limit) that are NOT in the processed history.
+    """
+    history = get_processed_history()
+    target_dir = config.WHATSAPP_INTERNAL_PATH
+
+    lookback_hours = config.SCAN_LOOKBACK_HOURS
+
+    if not os.path.exists(target_dir or not config.SCAN_LOOKBACK_ENABLED):
+        return
+
+    print(
+        f"{Fore.CYAN}🔍 Startup Scan:{Style.RESET_ALL} Checking for missed files (last {lookback_hours}h)..."
+    )
+
+    now = time.time()
+    cutoff = now - (lookback_hours * 3600)
+    count = 0
+    audio_files = []
+
+    for root, _, files in os.walk(target_dir):
+        for filename in files:
+            if filename.endswith((".opus", ".m4a", ".mp3", ".wav")):
+                filepath = os.path.join(root, filename)
+                try:
+                    # Get modification time
+                    mtime = os.path.getmtime(filepath)
+
+                    if mtime > cutoff:
+                        audio_files.append((mtime, filepath, filename))
+                except OSError:
+                    continue
+
+    audio_files.sort(key=lambda x: x[0])
+
+    for _, filepath, filename in audio_files:
+        if filename not in history:
+            print(
+                f"   {Fore.MAGENTA}+ Queuing missed file:{Style.RESET_ALL} {filename}"
+            )
+            audio_queue.put(filepath)
+            count += 1
+
+    if count == 0:
+        print(f"   {Fore.GREEN}✓ All caught up.{Style.RESET_ALL}")
+    else:
+        print(f"   {Fore.GREEN}✓ Added {count} missed files to queue.{Style.RESET_ALL}")
+    print("-" * 50)
+
+
 class TranscriptionWorker(threading.Thread):
     def __init__(self, model: WhisperModel, audio_queue: queue.Queue) -> None:
         super().__init__()
         self.model = model
         self.queue = audio_queue
-        # Daemon means this thread dies when the main program exits
         self.daemon = True
         self.start()
 
@@ -124,7 +210,6 @@ class TranscriptionWorker(threading.Thread):
         pending_count = self.queue.qsize()
         queue_msg = f" ({pending_count} more in queue)" if pending_count > 0 else ""
 
-        # Wait for file readiness
         if not self.wait_for_file_ready(filename):
             print(f"{Fore.RED}✗ [TIMEOUT]{Style.RESET_ALL} File not ready: {file_base}")
             return
@@ -184,7 +269,9 @@ class TranscriptionWorker(threading.Thread):
         except Exception as e:
             print(f"{Fore.RED}✗ [ERROR]{Style.RESET_ALL} {e}")
 
-    def wait_for_file_ready(self, filepath: str, timeout: int = 10) -> bool:
+    def wait_for_file_ready(
+        self, filepath: str, timeout: int = config.FILE_READY_TIMEOUT
+    ) -> bool:
         """
         Polls the file size to ensure it has finished writing.
 
@@ -283,6 +370,9 @@ def main() -> None:
     # 4. Start Watching
     audio_queue: queue.Queue = queue.Queue()
     worker = TranscriptionWorker(model, audio_queue)  # noqa: F841
+
+    if config.SCAN_LOOKBACK_ENABLED:
+        queue_recent_files(audio_queue)
 
     event_handler = InternalAudioHandler(audio_queue)
     observer = Observer()
