@@ -20,7 +20,8 @@ A lightning-fast, privacy-focused tool that automatically transcribes incoming W
 
 * **📂 Intelligent Monitoring:** Uses a threaded `Watchdog` observer to detect voice notes instantly without locking your system.
 * **🏥 System Health Check:** Includes a utility to analyze your RAM/VRAM and suggest the optimal AI model size to prevent crashes.
-* **🧹 Smart Maintenance:** Automatically cleans up AI models that haven't been used in 7 days to save disk space.
+* **Smart Maintenance:** Automatically cleans up AI models that haven't been used in 3 days (configurable) to save disk space.
+* **Startup Backfill:** Scans for missed voice notes from the last hour upon launch to ensure nothing is lost.
 * **📋 Auto-Clipboard & Logging:**
   * Text is copied to clipboard (`Cmd+V` / `Ctrl+V`).
   * Transcripts are saved to daily logs (e.g., `2026-01-27_daily.log`).
@@ -98,6 +99,12 @@ The script attempts to auto-detect paths on macOS.
 
 * **Windows Users:** You likely need to set `MANUAL_PATH_OVERRIDE` in `config.py` to point to your WhatsApp Media folder (usually inside `AppData\Local\Packages`).
 
+### Advanced Settings
+
+* **Scan Lookback:** Configure how many hours back to check for missed files on startup (default: 1 hour).
+* **Memory Limits:** Fine-tune how aggressively the script uses System RAM or GPU VRAM.
+* **Cleanup:** Adjust the retention period for unused AI models.
+
 ## 🏃 Usage
 
 Run the main script. It will initialize the model and start watching the folder.
@@ -110,9 +117,10 @@ python main.py
 **Workflow:**
 
 1. Script loads (shows a progress bar for model loading).
-2. "👀 Watching Folder" message appears.
-3. Receive a voice note in WhatsApp Desktop.
-4. **Instant Result:**
+2. **Startup Scan:** Checks for missed files from the last hour.
+3. "👀 Watching Folder" message appears.
+4. Receive a voice note in WhatsApp Desktop.
+5. **Instant Result:**
 
 * Console shows: `⚡️ [WORKING] Processing: audio_file.opus`
 * Then: `✅ [DONE] Transcript: Hello world...`
