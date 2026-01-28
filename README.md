@@ -48,22 +48,12 @@ git clone https://github.com/jpxoi/wa-transcriber.git
 cd wa-transcriber
 ```
 
-### Create a virtual environment
-
-```bash
-python -m venv .venv
-# macOS/Linux:
-source .venv/bin/activate
-# Windows:
-.venv\Scripts\activate
-```
-
 ### Install the package
 
-This will install the package in editable mode, which means that any changes made to the source code will be reflected immediately without needing to reinstall the package.
+This will install the package in your system's Python environment. You can also use a virtual environment if you prefer.
 
 ```bash
-pip install -e .
+pip install .
 ```
 
 ### Run the Health Check (Crucial)
