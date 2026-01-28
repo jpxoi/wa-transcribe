@@ -55,14 +55,14 @@ def print_banner(subtitle: str = ""):
     set_window_title(config.APP_NAME)
 
     print(
-        f"{Fore.GREEN}●{Style.RESET_ALL} {Style.BRIGHT}{config.APP_NAME}{Style.RESET_ALL} {Style.DIM}v{config.APP_VERSION}{Style.RESET_ALL}"
+        f"{Fore.GREEN}●{Style.RESET_ALL} {Style.BRIGHT}{config.APP_NAME}{Style.RESET_ALL} "
+        f"{Style.DIM}v{config.APP_VERSION}{Style.RESET_ALL}"
     )
     if subtitle:
         print(f"{Style.DIM}  {subtitle}{Style.RESET_ALL}")
 
-    print(
-        f"{Style.DIM}  © 2026 {config.DEVELOPER_NAME} (@{config.DEVELOPER_USERNAME}){Style.RESET_ALL}"
-    )
+    footer = f"© 2026 {config.DEVELOPER_NAME} (@{config.DEVELOPER_USERNAME})"
+    print(f"{Style.DIM}  {footer}{Style.RESET_ALL}")
     print(f"{Style.DIM}" + "─" * 50 + f"{Style.RESET_ALL}")
 
 

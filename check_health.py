@@ -112,13 +112,13 @@ def print_status(
         fix_cmd (str, optional): Command to fix the issue. Defaults to "".
     """
     if status:
-        icon = f"{Fore.GREEN}✅{Style.RESET_ALL}"
+        icon = f"{Fore.GREEN}✓{Style.RESET_ALL}"
         print(
             f" {icon} {Style.BRIGHT}{component:<20}{Style.RESET_ALL} "
             f"{Fore.GREEN}Found{Style.RESET_ALL} {Style.DIM}({details}){Style.RESET_ALL}"
         )
     else:
-        icon = f"{Fore.RED}❌{Style.RESET_ALL}"
+        icon = f"{Fore.RED}✗{Style.RESET_ALL}"
         print(
             f" {icon} {Style.BRIGHT}{component:<20}{Style.RESET_ALL} "
             f"{Fore.RED}MISSING{Style.RESET_ALL}"
@@ -146,7 +146,7 @@ def main() -> None:
         )
     else:
         print(
-            f" {Fore.YELLOW}⚠️{Style.RESET_ALL} {Style.BRIGHT}{'Accelerator':<20}{Style.RESET_ALL} {Fore.YELLOW}None{Style.RESET_ALL} {Style.DIM}(Running on CPU - expects slower performance){Style.RESET_ALL}"
+            f" {Fore.YELLOW}{Style.RESET_ALL} {Style.BRIGHT}{'Accelerator':<20}{Style.RESET_ALL} {Fore.YELLOW}None{Style.RESET_ALL} {Style.DIM}(Running on CPU - expects slower performance){Style.RESET_ALL}"
         )
     print("")
 
@@ -215,12 +215,12 @@ def main() -> None:
 
         elif current_model == rec_model:
             print(
-                f"   {Fore.GREEN}✅ You are using the optimal model for your hardware.{Style.RESET_ALL}"
+                f"   {Fore.GREEN}✓ You are using the optimal model for your hardware.{Style.RESET_ALL}"
             )
 
     else:
         print(
-            f" {Fore.YELLOW}⚠️{Style.RESET_ALL} {Style.BRIGHT}{'Memory Check':<20}{Style.RESET_ALL} "
+            f" {Fore.YELLOW}!{Style.RESET_ALL} {Style.BRIGHT}{'Memory Check':<20}{Style.RESET_ALL} "
             f"{Fore.YELLOW}Skipped{Style.RESET_ALL} {Style.DIM}(Could not detect memory info){Style.RESET_ALL}"
         )
 
@@ -280,11 +280,11 @@ def main() -> None:
     print("\n" + f"{Style.DIM}" + "─" * 50 + f"{Style.RESET_ALL}")
     if all_good:
         print(
-            f"{Fore.GREEN}✨ System is ready! You can run 'python main.py' now.{Style.RESET_ALL}"
+            f"{Fore.GREEN}✓ System is ready! You can run 'python main.py' now.{Style.RESET_ALL}"
         )
     else:
         print(
-            f"{Fore.RED}🛑 Please fix the errors above before running the transcriber.{Style.RESET_ALL}"
+            f"{Fore.RED}✗ Please fix the errors above before running the transcriber.{Style.RESET_ALL}"
         )
         sys.exit(1)
 

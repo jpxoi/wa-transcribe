@@ -129,5 +129,6 @@ KNOWN_MODELS: List[str] = [
 
 APP_NAME: str = "WhatsApp Auto-Transcriber"
 APP_VERSION: str = "1.0"
+APP_GITHUB_URL: str = "https://github.com/jpxoi/wa-transcriber"
 DEVELOPER_NAME: str = "Jean Paul Fernandez"
 DEVELOPER_USERNAME: str = "jpxoi"

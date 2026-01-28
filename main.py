@@ -67,7 +67,7 @@ def cleanup_unused_models(current_model_name: str) -> None:
                 pass
 
 
-def save_to_log(text: str, source_file: str) -> None:
+def save_to_log(text: str, source_file: str, duration: str, elapsed: float) -> None:
     """
     Appends transcript to a daily log file.
 
@@ -75,20 +75,25 @@ def save_to_log(text: str, source_file: str) -> None:
         text (str): The transcribed text content.
         source_file (str): The full path to the original audio file.
     """
-    if not os.path.exists(config.LOG_FOLDER_PATH):
-        os.makedirs(config.LOG_FOLDER_PATH)
+    os.makedirs(config.LOG_FOLDER_PATH, exist_ok=True)
 
-    date_str: str = datetime.datetime.now().strftime("%Y-%m-%d")
-    log_file: str = os.path.join(config.LOG_FOLDER_PATH, f"{date_str}-Transcripts.txt")
-    timestamp: str = datetime.datetime.now().strftime("%H:%M:%S")
+    date_str = datetime.datetime.now().strftime("%Y-%m-%d")
+    log_file = os.path.join(config.LOG_FOLDER_PATH, f"{date_str}_daily.log")
+
+    timestamp = datetime.datetime.now().strftime("%H:%M:%S")
+    filename = os.path.basename(source_file)
+
+    header_line = f"─── {timestamp} INFO ".ljust(80, "─")
+
+    meta_info = f"{filename}  |  ⏳ {duration}  |  ⏱ done in {elapsed:.1f}s"
+
+    log_entry = f"{header_line}\n{meta_info}\n\n{text.strip()}\n\n"
 
     try:
         with open(log_file, "a", encoding="utf-8") as f:
-            f.write(f"[{timestamp}] File: {os.path.basename(source_file)}\n")
-            f.write(f"{text}\n")
-            f.write("-" * 40 + "\n")
-    except IOError as e:
-        print(f"{Fore.RED}⚠️ Log Error: {e}")
+            f.write(log_entry)
+    except IOError:
+        pass
 
 
 class TranscriptionWorker(threading.Thread):
@@ -121,9 +126,7 @@ class TranscriptionWorker(threading.Thread):
 
         # Wait for file readiness
         if not self.wait_for_file_ready(filename):
-            print(
-                f"{Fore.RED}❌ [TIMEOUT]{Style.RESET_ALL} File not ready: {file_base}"
-            )
+            print(f"{Fore.RED}✗ [TIMEOUT]{Style.RESET_ALL} File not ready: {file_base}")
             return
 
         try:
@@ -165,7 +168,7 @@ class TranscriptionWorker(threading.Thread):
 
             # 4. Success Output
             print(
-                f"{Fore.GREEN}✅ [DONE in {elapsed:.1f}s]{Style.RESET_ALL} Transcript:"
+                f"{Fore.GREEN}✓ [DONE in {elapsed:.1f}s]{Style.RESET_ALL} Transcript:"
             )
             print(f"{Fore.WHITE}{Style.DIM}   {text}")
 
@@ -174,12 +177,12 @@ class TranscriptionWorker(threading.Thread):
                 pyperclip.copy(text)
                 print(f"{Fore.BLUE}   📋 Copied to clipboard")
             except Exception:
-                print(f"{Fore.YELLOW}   ⚠️ Clipboard unavailable")
+                print(f"{Fore.YELLOW}   ! Clipboard unavailable")
 
-            save_to_log(text, filename)
+            save_to_log(text, filename, duration_fmt, elapsed)
 
         except Exception as e:
-            print(f"{Fore.RED}❌ [ERROR]{Style.RESET_ALL} {e}")
+            print(f"{Fore.RED}✗ [ERROR]{Style.RESET_ALL} {e}")
 
     def wait_for_file_ready(self, filepath: str, timeout: int = 10) -> bool:
         """
@@ -234,7 +237,7 @@ class InternalAudioHandler(FileSystemEventHandler):
             self.last_transcribed = filename
 
             print(
-                f"{Fore.MAGENTA}📥 [NEW]{Style.RESET_ALL} Detected: {os.path.basename(filename)}"
+                f"\n{Fore.MAGENTA}📥 [NEW]{Style.RESET_ALL} Detected: {os.path.basename(filename)}"
             )
             self.queue.put(filename)
 
@@ -247,7 +250,7 @@ def main() -> None:
         config.WHATSAPP_INTERNAL_PATH
     ):
         print(
-            f"{Fore.RED}❌ Error:{Style.RESET_ALL} Could not find WhatsApp Media folder."
+            f"{Fore.RED}✗ [ERROR] Could not find WhatsApp Media folder.{Style.RESET_ALL}"
         )
         print(f"   OS Detected: {config.CURRENT_OS}")
         print("   Please open 'config.py' and manually set WHATSAPP_INTERNAL_PATH.")
@@ -271,11 +274,11 @@ def main() -> None:
             model = whisper.load_model(config.MODEL_SIZE, device=device)
             pbar.update(1)
     except RuntimeError as e:
-        print(f"{Fore.RED}⚠️ Failed to load on {device}: {e}")
+        print(f"{Fore.RED}✗ Failed to load on {device}: {e}")
         print("   Falling back to CPU...")
         model = whisper.load_model(config.MODEL_SIZE, device="cpu")
 
-    print(f"{Fore.GREEN}✅ System Ready!{Style.RESET_ALL}")
+    print(f"{Fore.GREEN}✓ System Ready!{Style.RESET_ALL}")
 
     # 4. Start Watching
     audio_queue: queue.Queue = queue.Queue()
@@ -296,7 +299,7 @@ def main() -> None:
             time.sleep(1)
     except KeyboardInterrupt:
         observer.stop()
-        print(f"\n{Fore.RED}🛑 Stopping Transcriber.{Style.RESET_ALL}")
+        print(f"\n{Fore.RED}● Stopping Transcriber.{Style.RESET_ALL}")
     observer.join()
 
 

@@ -23,7 +23,7 @@ A lightning-fast, privacy-focused tool that automatically transcribes incoming W
 * **🧹 Smart Maintenance:** Automatically cleans up AI models that haven't been used in 7 days to save disk space.
 * **📋 Auto-Clipboard & Logging:**
   * Text is copied to clipboard (`Cmd+V` / `Ctrl+V`).
-  * Transcripts are saved to daily logs (e.g., `2026-01-27-Transcripts.txt`).
+  * Transcripts are saved to daily logs (e.g., `2026-01-27_daily.log`).
 
 ## 🚀 Prerequisites
 
