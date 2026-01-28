@@ -409,12 +409,6 @@ def main() -> None:
         action="store_true",
         help="Run system diagnostics to verify dependencies and folder access.",
     )
-    parser.add_argument(
-        "--set-model",
-        type=str,
-        default="base",
-        help="Set the model to use for transcription.",
-    )
 
     args = parser.parse_args()
 
