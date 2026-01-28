@@ -1,4 +1,4 @@
-from app import setup, config
+from app import setup
 
 
 def test_suggest_best_model_vram(mocker):
