@@ -37,7 +37,7 @@ Whisper relies on FFmpeg for audio processing.
 
 ### 2. Python 3.10+
 
-Ensure you have a modern Python version installed.
+Ensure you have a modern Python version installed. Pr
 
 ## 🛠️ Installation
 
@@ -78,13 +78,32 @@ wa-transcriber --health
 * ✅ Detects Hardware Acceleration (CUDA vs MPS vs CPU).
 * ✅ Calculates memory overhead and suggests the best `MODEL_SIZE`.
 
-## ⚙️ Configuration (`app/config.py`)
+## ⚙️ Configuration
 
-Open `app/config.py` to adjust settings.
+Run the interactive setup wizard to configure the application:
 
-### Model Selection
+```bash
+wa-transcriber --setup
+```
 
-Based on the output of `wa-transcriber --health`, set your `MODEL_SIZE`:
+This will guide you through:
+
+* **Model Selection:** choosing the appropriate Whisper model size.
+* **Language:** setting a preferred language or using auto-detection.
+* **WhatsApp Path:** automatically detecting or manually specifying the WhatsApp Media folder.
+* **Hardware Limits:** configuring RAM and VRAM usage limits.
+
+To view your current configuration at any time, run:
+
+```bash
+wa-transcriber --config
+```
+
+Configuration is stored in `config.json` in your system's application data directory (e.g., `~/Library/Application Support/wa-transcriber/` on macOS).
+
+### Model Selection Reference
+
+The setup wizard will suggest a model based on your hardware, but you can choose any of the following:
 
 | Model | VRAM/RAM Req | Speed | Accuracy | Best For |
 | --- | --- | --- | --- | --- |
@@ -95,17 +114,13 @@ Based on the output of `wa-transcriber --health`, set your `MODEL_SIZE`:
 | `turbo` | ~6 GB | 🏎️ **Optimized** | **Excellent** | **M1/M2/M3 & RTX 3060+** |
 | `large-v3` | ~10 GB | 🐌 Slow | Perfect | Heavy accents / Noisy audio |
 
-### WhatsApp Path
-
-The script attempts to auto-detect paths on macOS.
-
-* **Windows Users:** You likely need to set `MANUAL_PATH_OVERRIDE` in `app/config.py` to point to your WhatsApp Media folder (usually inside `AppData\Local\Packages`).
-
 ### Advanced Settings
 
-* **Scan Lookback:** Configure how many hours back to check for missed files on startup (default: 1 hour).
-* **Memory Limits:** Fine-tune how aggressively the script uses System RAM or GPU VRAM.
-* **Cleanup:** Adjust the retention period for unused AI models.
+The following settings can be fine-tuned via the setup wizard or by manually editing `config.json`:
+
+* **Scan Lookback:** Number of hours to check for missed files on startup.
+* **Model Cleanup:** Automatically delete models unused for a set number of days.
+* **Memory Limits:** Adjust how aggressively the script uses System RAM or GPU VRAM.
 
 ## 🏃 Usage
 
@@ -127,6 +142,17 @@ wa-transcriber
 * Console shows: `⚡️ [WORKING] Processing: audio_file.opus`
 * Then: `✅ [DONE] Transcript: Hello world...`
 * Clipboard: Updated automatically.
+
+## 🛠️ CLI Reference
+
+| Command | Description |
+| --- | --- |
+| `wa-transcriber` | Starts the main transcription service. |
+| `wa-transcriber --setup` | Runs the interactive configuration wizard. |
+| `wa-transcriber --health` | Runs system diagnostics and hardware checks. |
+| `wa-transcriber --config` | Displays the current configuration. |
+| `wa-transcriber --ta-logs` | Shows the last 50 lines of transcribed audio logs. |
+| `wa-transcriber --app-logs` | Shows the last 50 lines of application logs. |
 
 ## ❓ Troubleshooting
 

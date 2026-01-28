@@ -193,7 +193,7 @@ def run_diagnostics() -> None:
                 f"      It requires ~{current_req}GB, but you only have {usable_gb:.1f}GB safe."
             )
             print(
-                f"      {Fore.YELLOW}➜ Switch to '{rec_model}' in app/config.py{Style.RESET_ALL}"
+                f"      {Fore.YELLOW}➜ Switch to '{rec_model}' in config.json{Style.RESET_ALL}"
             )
 
         elif current_model == "large" and rec_model == "turbo":
@@ -210,7 +210,7 @@ def run_diagnostics() -> None:
                 f"      You use '{current_model}', but can handle {Fore.GREEN}'{rec_model}'{Style.RESET_ALL}."
             )
             print(
-                f"      {Fore.YELLOW}➜ Switch to '{rec_model}' in app/config.py for better accuracy.{Style.RESET_ALL}"
+                f"      {Fore.YELLOW}➜ Switch to '{rec_model}' in config.json for better accuracy.{Style.RESET_ALL}"
             )
 
         elif current_model == rec_model:
@@ -268,7 +268,7 @@ def run_diagnostics() -> None:
             f"{Fore.RED}NOT FOUND{Style.RESET_ALL}"
         )
         print(
-            f"    {Fore.YELLOW}➜ Fix: Open app/config.py and set MANUAL_PATH_OVERRIDE{Style.RESET_ALL}"
+            f"    {Fore.YELLOW}➜ Fix: Open config.json and set MANUAL_PATH_OVERRIDE{Style.RESET_ALL}"
         )
         if platform.system() == "Windows":
             print(
@@ -280,7 +280,7 @@ def run_diagnostics() -> None:
     print("\n" + f"{Style.DIM}" + "─" * 50 + f"{Style.RESET_ALL}")
     if all_good:
         print(
-            f"{Fore.GREEN}✓ System is ready! You can run 'python main.py' now.{Style.RESET_ALL}"
+            f"{Fore.GREEN}✓ System is ready! You can run 'wa-transcriber' now.{Style.RESET_ALL}"
         )
     else:
         print(
