@@ -87,6 +87,8 @@ def test_get_memory_info_linux():
         patch("builtins.open", mock_open(read_data=mock_meminfo)),
     ):
         total_gb, mem_type = utils.get_memory_info()
+
+        assert total_gb is not None, "Memory info should not be None"
         # 16384000 KB / 1024 / 1024 = 15.625 GB
         assert abs(total_gb - 15.625) < 0.01
         assert mem_type == "system"
