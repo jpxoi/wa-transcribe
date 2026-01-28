@@ -38,7 +38,7 @@ Homepage = "https://github.com/jpxoi/wa-transcriber"
 Issues = "https://github.com/jpxoi/wa-transcriber/issues"
 
 [project.scripts]
-wa-transcriber = "app.cli:cli"
+wa-transcriber = "app.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
