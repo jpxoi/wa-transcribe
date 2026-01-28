@@ -405,7 +405,7 @@ def main() -> None:
         description="Automatically transcribe WhatsApp voice notes to your clipboard using OpenAI Whisper.",
     )
     parser.add_argument(
-        "--health-check",
+        "--health",
         action="store_true",
         help="Run system diagnostics to verify dependencies and folder access.",
     )

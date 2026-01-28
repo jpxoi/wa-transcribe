@@ -30,7 +30,7 @@ This project is open to everyone. Please be respectful, empathetic, and patient.
 
 Before creating a bug report, please check the following:
 
-1. **Run the Health Check:** Run `python main.py --health-check` and see if it flags any missing dependencies or hardware issues.
+1. **Run the Health Check:** Run `python main.py --health` and see if it flags any missing dependencies or hardware issues.
 2. **Search Issues:** Check if the issue has already been reported.
 
 If you are opening a new issue, please include:
@@ -129,7 +129,7 @@ git checkout -b feature/amazing-new-feature
 1. Make your changes.
 2. **Test your changes:**
 
-* Run `python main.py --health-check` to ensure logic holds up.
+* Run `python main.py --health` to ensure logic holds up.
 * Simulate a file drop to ensure the watcher triggers.
 
 1. Commit your changes with a clear message:

@@ -69,7 +69,7 @@ pip install -r requirements.txt
 Before running the main program, run the included health check tool. This script analyzes your **System RAM** (CPU/MPS) or **VRAM** (NVIDIA) and calculates exactly which Whisper model your computer can handle safely.
 
 ```bash
-python main.py --health-check
+python main.py --health
 ```
 
 * ✅ Verifies FFmpeg installation.
@@ -82,7 +82,7 @@ Open `app/config.py` to adjust settings.
 
 ### Model Selection
 
-Based on the output of `python main.py --health-check`, set your `MODEL_SIZE`:
+Based on the output of `python main.py --health`, set your `MODEL_SIZE`:
 
 | Model | VRAM/RAM Req | Speed | Accuracy | Best For |
 | --- | --- | --- | --- | --- |
@@ -129,7 +129,7 @@ python main.py
 ## ❓ Troubleshooting
 
 * **"Clipboard unavailable":** On Linux, you may need `xclip` or `xsel`. On Windows/Mac, this usually works out of the box.
-* **"CUDA out of memory":** Run `python main.py --health-check` and switch to a smaller model (e.g., from `large` to `medium`).
+* **"CUDA out of memory":** Run `python main.py --health` and switch to a smaller model (e.g., from `large` to `medium`).
 * **Script doesn't trigger:** Ensure "Media Auto-Download" is ON in WhatsApp settings, or manually click the download arrow on the voice note.
 
 ## 🤝 Contributing
