@@ -15,6 +15,7 @@
 
 
 import os
+import shutil
 import questionary
 from app import config, utils
 from questionary import Choice
@@ -29,6 +30,32 @@ MODEL_REQUIREMENTS = {
     "base": 1.0,
     "tiny": 1.0,
 }
+
+
+def reset_application(interactive: bool = True) -> None:
+    """
+    Deletes the application data directory after user confirmation.
+
+    Args:
+        interactive (bool): Whether to prompt for confirmation. Defaults to True.
+    """
+    if (
+        not interactive
+        or questionary.confirm(
+            "Are you sure you want to reset all application data? This cannot be undone.",
+            default=False,
+        ).ask()
+    ):
+        return
+
+    app_data_dir = os.path.expanduser(config.APP_DATA_DIR)
+
+    try:
+        if os.path.exists(app_data_dir):
+            shutil.rmtree(app_data_dir)
+        print(f"{Fore.GREEN}Successfully reset application data.{Style.RESET_ALL}")
+    except Exception as e:
+        print(f"{Fore.RED}Failed to reset application data: {str(e)}{Style.RESET_ALL}")
 
 
 def suggest_best_model() -> str:

@@ -141,6 +141,7 @@ wa-transcriber
 | `wa-transcriber --setup` | Runs the interactive configuration wizard. |
 | `wa-transcriber --health` | Runs system diagnostics and hardware checks. |
 | `wa-transcriber --config` | Displays the current configuration. |
+| `wa-transcriber --reset` | Resets the application by removing all user data and configuration. |
 | `wa-transcriber --ta-logs` | Shows the last 50 lines of transcribed audio logs. |
 | `wa-transcriber --app-logs` | Shows the last 50 lines of application logs. |
 

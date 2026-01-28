@@ -26,6 +26,11 @@ def main() -> None:
         help="Shows the current configuration of the application.",
     )
     group.add_argument(
+        "--reset",
+        action="store_true",
+        help="Resets the application by removing all user data and configuration.",
+    )
+    group.add_argument(
         "--ta-logs",
         action="store_true",
         help="Print the last 50 lines of the most recent transcribed audio log file.",
@@ -60,6 +65,10 @@ def main() -> None:
 
     if args.config:
         config.show_config()
+        return
+
+    if args.reset:
+        setup.reset_application()
         return
 
     if args.ta_logs:
