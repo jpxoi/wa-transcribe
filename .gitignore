@@ -218,3 +218,6 @@ __marimo__/
 # Transcription Logs
 ## Modify this in case you change the LOG_FOLDER_NAME in config.py
 transcribed_audio_logs
+
+# Database
+history.db
