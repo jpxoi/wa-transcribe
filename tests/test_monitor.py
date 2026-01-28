@@ -34,3 +34,17 @@ def test_internal_audio_handler_ignore_dup(mocker):
 
     # Should only be queued once
     assert q.qsize() == 1
+
+
+def test_internal_audio_handler_ignore_non_audio(mocker):
+    """Test InternalAudioHandler ignores non-audio files."""
+    q = queue.Queue()
+    handler = monitor.InternalAudioHandler(q)
+
+    event = mocker.MagicMock()
+    event.is_directory = False
+    event.src_path = "/path/document.txt"
+
+    handler.on_created(event)
+
+    assert q.qsize() == 0
