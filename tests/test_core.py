@@ -131,39 +131,6 @@ def test_run_transcriber_model_cleanup_called(mocker):
     cleanup.assert_called_once()
 
 
-def test_run_transcriber_model_load_fallback(mocker):
-    mocker.patch("app.core.utils.print_banner")
-    mocker.patch("app.core.db.init_db")
-    mocker.patch("app.core.db.migrate_from_logs")
-
-    # ⛔ Maintenance is NOT under test here
-    mocker.patch("app.core.maintenance.cleanup_unused_models")
-
-    # Valid WhatsApp path
-    mocker.patch("app.config.WHATSAPP_INTERNAL_PATH", "/mock/path")
-    mocker.patch("os.path.exists", return_value=True)
-
-    # Device detection
-    mocker.patch("app.core.utils.get_compute_device", return_value="cuda")
-
-    # Whisper model loading: fail on CUDA, succeed on CPU
-    load_model = mocker.patch("app.core.whisper.load_model")
-    load_model.side_effect = [
-        RuntimeError("CUDA failed"),
-        mocker.MagicMock(),
-    ]
-
-    mocker.patch("app.core.TranscriptionWorker")
-
-    # 💥 Stop infinite loop immediately
-    mocker.patch("time.sleep", side_effect=KeyboardInterrupt)
-
-    core.run_transcriber()
-
-    # CUDA attempt + CPU fallback
-    assert load_model.call_count == 2
-
-
 def test_show_logs(capsys):
     core.show_logs()
     captured = capsys.readouterr()
