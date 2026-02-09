@@ -24,7 +24,7 @@ def test_get_app_data_dir_windows(mocker):
     mocker.patch("pathlib.Path.mkdir")
 
     path = config.get_app_data_dir()
-    assert str(path) == os.path.join("C:\\Local", "wa-transcriber")
+    assert str(path) == "C:\\Local\\.wa-transcriber"
 
 
 def test_get_app_data_dir_darwin(mocker):
@@ -33,7 +33,7 @@ def test_get_app_data_dir_darwin(mocker):
     mocker.patch("pathlib.Path.mkdir")
 
     path = config.get_app_data_dir()
-    assert str(path) == "/Users/mock/Library/Application Support/wa-transcriber"
+    assert str(path) == "/Users/mock/.wa-transcriber"
 
 
 def test_get_app_data_dir_linux(mocker):
@@ -48,7 +48,7 @@ def test_get_app_data_dir_linux(mocker):
     mocker.patch("pathlib.Path.mkdir")
 
     path = config.get_app_data_dir()
-    assert str(path) == "/home/user/.config/wa-transcriber"
+    assert str(path) == "/home/user/.wa-transcriber"
 
 
 def test_load_configuration_defaults(mocker):

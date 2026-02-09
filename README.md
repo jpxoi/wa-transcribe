@@ -90,7 +90,7 @@ To view your current configuration at any time, run:
 wa-transcriber config
 ```
 
-Configuration is stored in `config.json` in your system's application data directory (e.g., `~/Library/Application Support/wa-transcriber/` on macOS).
+Configuration is stored in `config.json` in `~/.wa-transcriber/`.
 
 ### Model Selection Reference
 

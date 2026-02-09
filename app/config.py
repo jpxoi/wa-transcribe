@@ -34,18 +34,8 @@ SYSTEM: str = platform.system()
 
 
 def get_app_data_dir() -> Path:
-    """Returns the OS-standard path for app data (Config, DB, Logs)."""
-    if SYSTEM == "Windows":
-        # Windows: %LOCALAPPDATA%\wa-transcriber
-        base = Path(os.getenv("LOCALAPPDATA", HOME_DIR / "AppData" / "Local"))
-    elif SYSTEM == "Darwin":
-        # macOS: ~/Library/Application Support/wa-transcriber
-        base = HOME_DIR / "Library" / "Application Support"
-    else:
-        # Linux: ~/.config/wa-transcriber
-        base = Path(os.getenv("XDG_CONFIG_HOME", HOME_DIR / ".config"))
-
-    app_dir: Path = base / APP_NAME
+    """Returns the path for app data (Config, DB, Logs) under ~/.wa-transcriber."""
+    app_dir: Path = HOME_DIR / ".wa-transcriber"
     app_dir.mkdir(parents=True, exist_ok=True)
     return app_dir
 
