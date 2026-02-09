@@ -1,4 +1,3 @@
-import os
 import pytest  # noqa: F401
 from pathlib import Path
 from app import config
