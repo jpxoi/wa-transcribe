@@ -19,11 +19,10 @@ def test_known_models():
 def test_get_app_data_dir_windows(mocker):
     mocker.patch("app.config.SYSTEM", "Windows")
     mocker.patch("app.config.HOME_DIR", Path("C:/Users/User"))
-    mocker.patch("os.getenv", return_value="C:\\Local")
     mocker.patch("pathlib.Path.mkdir")
 
     path = config.get_app_data_dir()
-    assert str(path) == "C:\\Local\\.wa-transcriber"
+    assert str(path) == "C:/Users/User/.wa-transcriber"
 
 
 def test_get_app_data_dir_darwin(mocker):
