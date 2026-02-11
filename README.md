@@ -12,6 +12,7 @@ A lightning-fast, privacy-focused tool that automatically transcribes incoming W
 ![OpenAI Whisper](https://img.shields.io/badge/AI-OpenAI%20Whisper-green?logo=openai&logoColor=white)
 ![Platform](https://img.shields.io/badge/Platform-macOS%20%7C%20Windows-lightgrey?logo=apple&logoColor=black)
 ![License](https://img.shields.io/badge/License-GPLv3-blue?logo=gnu&logoColor=white)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/jpxoi/wa-transcriber)
 
 ## ✨ Features
 
